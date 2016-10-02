@@ -1,7 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#FF9800</color>
-    <color name="colorPrimaryDark">#E65100</color>
-    <color name="colorAccent">#2E7D32</color>
-    <color name="colorTitle">#ffffff</color>
+    <color name="primary">#FF9800</color>
+    <color name="primary_darker">#fb8c00</color>
+    <color name="primary_dark">#E65100</color>
+
+    <color name="accent">#2E7D32</color>
+
+    <color name="iron">#CCCCCC</color>
+    <color name="title">#ffffff</color>
+    <color name="white">#ffffff</color>
+
 </resources>
