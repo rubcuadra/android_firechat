@@ -1,9 +1,7 @@
 package cuadra.places.Activities;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
-import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -29,7 +27,6 @@ import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.crash.FirebaseCrash;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
@@ -37,10 +34,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import cuadra.places.Adapters.MainAdapter;
+import cuadra.places.CodelabPreferences;
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.R;
 
-public class tabbed_activity extends AppCompatActivity implements
+public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFragmentInteractionListener,
         GoogleApiClient.OnConnectionFailedListener
 
@@ -50,7 +48,6 @@ public class tabbed_activity extends AppCompatActivity implements
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
-    public static final String ARG_MESSAGE_LENGTH ="friendly_msg_length";
 
     private MainAdapter mSectionsPagerAdapter;
     private ViewPager mViewPager;
@@ -65,7 +62,7 @@ public class tabbed_activity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState)
     {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_tabbed_activity);
+        setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));//SetToolbar
         setGoogleAPI();
         setAuth();
@@ -184,7 +181,7 @@ public class tabbed_activity extends AppCompatActivity implements
                 .setDeveloperModeEnabled(true)
                 .build();
         Map<String, Object> defaultConfigMap = new HashMap<>();
-        defaultConfigMap.put(ARG_MESSAGE_LENGTH, DEFAULT_MSG_LENGTH_LIMIT);
+        defaultConfigMap.put(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT);
         mFirebaseRemoteConfig.setConfigSettings(firebaseRemoteConfigSettings);
         mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
     }

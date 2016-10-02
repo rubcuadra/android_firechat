@@ -36,8 +36,6 @@ import com.google.firebase.auth.AuthCredential;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.GoogleAuthProvider;
-
-import cuadra.places.MainActivity;
 import cuadra.places.R;
 
 public class SignInActivity extends AppCompatActivity implements
@@ -142,7 +140,7 @@ public class SignInActivity extends AppCompatActivity implements
                                     Toast.LENGTH_SHORT).show();
                         } else {
                             Toast.makeText(SignInActivity.this, "Welcome! "+ acct.getDisplayName(),Toast.LENGTH_SHORT).show();
-                            startActivity(new Intent(SignInActivity.this, tabbed_activity.class));
+                            startActivity(new Intent(SignInActivity.this, MainActivity.class));
                             finish();
                         }
                     }

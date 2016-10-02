@@ -9,10 +9,8 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name=".MainActivity"></activity>
-
         <activity
-            android:name=".Activities.tabbed_activity"
+            android:name=".Activities.MainActivity"
             android:label="@string/title_activity_tabbed_activity"
             android:theme="@style/AppTheme.NoActionBar">
 

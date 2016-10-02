@@ -38,8 +38,7 @@ import cuadra.places.FriendlyMessage;
 import cuadra.places.R;
 import de.hdodenhof.circleimageview.CircleImageView;
 
-import static cuadra.places.Activities.tabbed_activity.DEFAULT_MSG_LENGTH_LIMIT;
-import static cuadra.places.Activities.tabbed_activity.ARG_MESSAGE_LENGTH;
+import static cuadra.places.Activities.MainActivity.DEFAULT_MSG_LENGTH_LIMIT;
 
 public class FireNotes extends Fragment
 {
@@ -266,7 +265,7 @@ public class FireNotes extends Fragment
 
     private void applyRetrievedLengthLimit()
     {
-        Long friendly_msg_length = mFirebaseRemoteConfig.getLong(ARG_MESSAGE_LENGTH);
+        Long friendly_msg_length = mFirebaseRemoteConfig.getLong(CodelabPreferences.FRIENDLY_MSG_LENGTH);
         mMessageEditText.setFilters( new InputFilter[]
                 {
                         new InputFilter.LengthFilter(friendly_msg_length.intValue())
