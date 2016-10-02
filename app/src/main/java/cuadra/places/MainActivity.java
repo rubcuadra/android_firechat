@@ -61,6 +61,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import java.util.HashMap;
 import java.util.Map;
 
+import cuadra.places.Activities.SignInActivity;
 import de.hdodenhof.circleimageview.CircleImageView;
 
 public class MainActivity extends AppCompatActivity
@@ -139,7 +140,8 @@ public class MainActivity extends AppCompatActivity
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .addApi(AppInvite.API)
                 .build();
-        //Ads
+
+        //Ads AQUI VAMOS
         mAdView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
@@ -263,7 +265,8 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onStart() {
+    public void onStart()
+    {
         super.onStart();
         // Check if user is signed in.
         // TODO: Add code to check if user is signed in.

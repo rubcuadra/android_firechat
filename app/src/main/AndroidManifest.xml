@@ -12,7 +12,7 @@
         <activity android:name=".MainActivity"></activity>
 
         <activity
-            android:name=".tabbed_activity"
+            android:name=".Activities.tabbed_activity"
             android:label="@string/title_activity_tabbed_activity"
             android:theme="@style/AppTheme.NoActionBar">
 
@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".SignInActivity"/>
+        <activity android:name=".Activities.SignInActivity"/>
 
         <service
             android:name=".MyFirebaseMessagingService"
