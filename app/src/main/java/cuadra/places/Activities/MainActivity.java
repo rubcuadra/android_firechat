@@ -4,12 +4,14 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
@@ -40,7 +42,10 @@ import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -58,6 +63,7 @@ public class MainActivity extends AppCompatActivity implements
 {
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INVITE = 1;
+    private static final int RECORD_INTENT = 2;
     private static final int PERMISSIONS_ALL=3;
 
     private static final String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO};
@@ -81,6 +87,7 @@ public class MainActivity extends AppCompatActivity implements
     private MediaRecorder mRecorder = null;
     private MediaPlayer   mPlayer = null;
 
+    private FloatingActionButton fab_play;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -139,6 +146,19 @@ public class MainActivity extends AppCompatActivity implements
                     // the user
                     Log.d(TAG, "Failed to send invitation.");
                 }
+                break;
+            case RECORD_INTENT:
+                if (resultCode == RESULT_OK)
+                {
+                    mFileName=getfilePathFromAudioUri(data.getData());
+                    Log.d(TAG,mFileName); //PUEDE SER null pero es raro el caso
+                    fab_play.setVisibility(View.VISIBLE);
+                }
+                else
+                {
+
+                }
+
                 break;
             default:
                 break;
@@ -263,9 +283,11 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    private void startPlaying() {
+    private void startPlaying()
+    {
         mPlayer = new MediaPlayer();
-        try {
+        try
+        {
             mPlayer.setDataSource(mFileName);
             mPlayer.prepare();
             mPlayer.start();
@@ -310,23 +332,25 @@ public class MainActivity extends AppCompatActivity implements
     public void setFAB()
     {
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
+
         Log.d(TAG,mFileName);
         final FloatingActionButton fab_record = (FloatingActionButton) findViewById(R.id.fab);
-        FloatingActionButton fab_play= (FloatingActionButton) findViewById(R.id.fab_temporal);
+        fab_play= (FloatingActionButton) findViewById(R.id.fab_temporal);
 
         fab_record.setOnClickListener(new View.OnClickListener()
         {
             boolean mStartRecording = true;
-
             @Override
             public void onClick(View view)
             {
                 if (hasPermissions( getApplicationContext()  ,PERMISSIONS) )
                 {
-                    onRecord(mStartRecording);
-                    Snackbar.make(view, mStartRecording ? "Starting to record" : "Stopping record", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
-                    mStartRecording = !mStartRecording;
+                    Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+                    startActivityForResult(intent, RECORD_INTENT);
+                    //onRecord(mStartRecording);
+                    //Snackbar.make(view, mStartRecording ? "Starting to record" : "Stopping record", Snackbar.LENGTH_LONG)
+                    //        .setAction("Action", null).show();
+                    //mStartRecording = !mStartRecording;
                 }
                 else
                 {
@@ -349,6 +373,7 @@ public class MainActivity extends AppCompatActivity implements
                 mStartPlaying = !mStartPlaying;
             }
         });
+        fab_play.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -396,6 +421,17 @@ public class MainActivity extends AppCompatActivity implements
                     Log.d(TAG,permissions[i] + " "+ String.valueOf(grantResults[i]) );
                 break;
         }
+    }
+    public String getfilePathFromAudioUri(Uri u)
+    {
+        Cursor cursor = this.getContentResolver().query(u, new String[]{MediaStore.Audio.Media.DATA}, null, null, null);
+        if (cursor != null && cursor.getCount() != 0)
+        {
+            int columnIndex = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(columnIndex);
+        }
+        return null;
     }
 }
 
