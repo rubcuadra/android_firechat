@@ -1,11 +1,21 @@
 package cuadra.places.Activities;
 
+import android.Manifest;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -30,6 +40,7 @@ import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,8 +54,13 @@ public class MainActivity extends AppCompatActivity implements
         GoogleApiClient.OnConnectionFailedListener
 
 {
-    private static final String TAG = "TabActivity";
+    private static final String TAG = "MainActivity";
     private static final int REQUEST_INVITE = 1;
+    private static final int PERMISSIONS_ALL=3;
+
+    private static final String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO};
+
+
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
@@ -57,6 +73,11 @@ public class MainActivity extends AppCompatActivity implements
     private FirebaseUser mFirebaseUser;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private FirebaseAnalytics mFirebaseAnalytics;
+
+    //RECORDER
+    private static String mFileName = null;
+    private MediaRecorder mRecorder = null;
+    private MediaPlayer   mPlayer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -152,18 +173,6 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-
-    public void setFAB()
-    {
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
-    }
     public void setPager()
     {
         mSectionsPagerAdapter = new MainAdapter(getSupportFragmentManager());
@@ -228,4 +237,163 @@ public class MainActivity extends AppCompatActivity implements
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
         Toast.makeText(this, "Google Play Services error.", Toast.LENGTH_SHORT).show();
     }
+
+    //RECORD
+    private void onRecord(boolean start)
+    {
+        if (start)
+        {
+            startRecording();
+        } else
+        {
+            stopRecording();
+        }
+    }
+
+    private void onPlay(boolean start)
+    {
+        if (start)
+        {
+            startPlaying();
+        } else
+        {
+            stopPlaying();
+        }
+    }
+
+    private void startPlaying() {
+        mPlayer = new MediaPlayer();
+        try {
+            mPlayer.setDataSource(mFileName);
+            mPlayer.prepare();
+            mPlayer.start();
+        } catch (IOException e)
+        {
+            Log.e(TAG, "prepare() failed");
+        }
+    }
+
+    private void stopPlaying()
+    {
+        mPlayer.release();
+        mPlayer = null;
+    }
+
+    private void startRecording()
+    {
+        mRecorder = new MediaRecorder();
+        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+        mRecorder.setOutputFile(mFileName);
+        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+
+        try
+        {
+            mRecorder.prepare();
+        } catch (IOException e)
+        {
+            Log.e(TAG, "prepare() failed");
+        }
+
+        mRecorder.start();
+    }
+
+    private void stopRecording()
+    {
+        mRecorder.stop();
+        mRecorder.release();
+        mRecorder = null;
+    }
+
+    public void setFAB()
+    {
+        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
+
+        FloatingActionButton fab_record = (FloatingActionButton) findViewById(R.id.fab);
+        FloatingActionButton fab_play= (FloatingActionButton) findViewById(R.id.fab_temporal);
+
+        fab_record.setOnClickListener(new View.OnClickListener()
+        {
+            boolean mStartRecording = true;
+
+            @Override
+            public void onClick(View view)
+            {
+                if (hasPermissions( getApplicationContext()  ,PERMISSIONS) )
+                {
+                    onRecord(mStartRecording);
+                    Snackbar.make(view, mStartRecording ? "Starting to record" : "Stopping record", Snackbar.LENGTH_LONG)
+                            .setAction("Action", null).show();
+                    mStartRecording = !mStartRecording;
+                }
+                else
+                {
+                    askPermissions();
+                }
+            }
+        });
+
+        fab_play.setOnClickListener(new View.OnClickListener()
+        {
+            boolean mStartPlaying = true;
+
+            @Override
+            public void onClick(View view)
+            {
+
+                onPlay(mStartPlaying);
+                Snackbar.make(view, mStartPlaying ? "Starting to play" : "Stopping note", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+                mStartPlaying = !mStartPlaying;
+            }
+        });
+    }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        if (mRecorder != null)
+        {
+            mRecorder.release();
+            mRecorder = null;
+        }
+
+        if (mPlayer != null) {
+            mPlayer.release();
+            mPlayer = null;
+        }
+    }
+
+    public static boolean hasPermissions(Context context, String... permissions)
+    {
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && context != null && permissions != null)
+        {
+            for (String permission : permissions)
+            {
+                if (ActivityCompat.checkSelfPermission(context, permission) != PackageManager.PERMISSION_GRANTED)
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    public void askPermissions()
+    {
+        ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSIONS_ALL);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults)
+    {
+        switch (requestCode)
+        {
+            case PERMISSIONS_ALL:
+                for (int i = 0; i<permissions.length;++i)
+                    Log.d(TAG,permissions[i] + " "+ String.valueOf(grantResults[i]) );
+                break;
+        }
+    }
 }
+
