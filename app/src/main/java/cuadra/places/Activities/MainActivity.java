@@ -49,6 +49,8 @@ import cuadra.places.CodelabPreferences;
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.R;
 
+import static android.R.drawable.presence_audio_busy;
+
 public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFragmentInteractionListener,
         GoogleApiClient.OnConnectionFailedListener
@@ -308,8 +310,8 @@ public class MainActivity extends AppCompatActivity implements
     public void setFAB()
     {
         mFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
-
-        FloatingActionButton fab_record = (FloatingActionButton) findViewById(R.id.fab);
+        Log.d(TAG,mFileName);
+        final FloatingActionButton fab_record = (FloatingActionButton) findViewById(R.id.fab);
         FloatingActionButton fab_play= (FloatingActionButton) findViewById(R.id.fab_temporal);
 
         fab_record.setOnClickListener(new View.OnClickListener()
