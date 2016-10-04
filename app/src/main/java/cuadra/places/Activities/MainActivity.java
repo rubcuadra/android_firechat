@@ -2,10 +2,14 @@ package cuadra.places.Activities;
 
 import android.Manifest;
 
+import android.animation.Animator;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.drawable.Drawable;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -31,6 +35,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 
+import android.view.animation.AnimationUtils;
 import android.widget.Toast;
 
 import com.google.android.gms.appinvite.AppInvite;
@@ -83,6 +88,11 @@ public class MainActivity extends AppCompatActivity implements
     private ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient;
     private int mCurrentFrag;
+    private FloatingActionButton fab;
+    private Context CONTEXT;
+
+    private Drawable sec;
+    private Drawable one;
 
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
@@ -99,6 +109,7 @@ public class MainActivity extends AppCompatActivity implements
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));//SetToolbar
+        CONTEXT = getApplicationContext();
         setGoogleAPI();
         setAuth();
         setFirebaseConfigs();
@@ -206,6 +217,8 @@ public class MainActivity extends AppCompatActivity implements
 
     public void setPager()
     {
+        one = ContextCompat.getDrawable(CONTEXT,R.drawable.common_plus_signin_btn_text_light);
+        sec = ContextCompat.getDrawable(CONTEXT,R.drawable.common_ic_googleplayservices);
         mCurrentFrag=1; //De enmedio
         mSectionsPagerAdapter = new MainAdapter(getSupportFragmentManager());
         mViewPager = (ViewPager) findViewById(R.id.container);
@@ -215,6 +228,7 @@ public class MainActivity extends AppCompatActivity implements
         mViewPager.setCurrentItem(mCurrentFrag);
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
         {
+            boolean f = true;
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
             @Override
@@ -223,7 +237,43 @@ public class MainActivity extends AppCompatActivity implements
             public void onPageSelected(int position)
             {
                 mCurrentFrag=position;
-                //Modificar FAB
+
+                ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 90f);
+                anim.setDuration(100);
+                anim.setRepeatCount(1);
+                anim.addListener(new Animator.AnimatorListener()
+                {
+                    @Override
+                    public void onAnimationStart(Animator animator) {}
+                    @Override
+                    public void onAnimationEnd(Animator animator)
+                    {
+
+                    }
+                    @Override
+                    public void onAnimationCancel(Animator animator) {}
+                    @Override
+                    public void onAnimationRepeat(Animator animator)
+                    {
+                        fab.setImageDrawable( f?one:sec);
+                        f=!f;
+                    }
+                });
+                anim.start();
+                //AnimatorSet animatorSet = new AnimatorSet();
+                //ObjectAnimator otherAnim = ObjectAnimator.ofFloat(fab, "alpha", 1f, 0f);
+                //otherAnim.setDuration(500);
+                //animatorSet.play(anim).with(otherAnim);
+                //animatorSet.start();
+
+
+                /*
+                if (mCurrentFrag!=1)
+                    fab.hide();
+                else
+                    fab.show();
+                */
+
             }
         });
     }
@@ -286,13 +336,13 @@ public class MainActivity extends AppCompatActivity implements
     public void setFAB()
     {
         //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
-        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener()
         {
             @Override
             public void onClick(View view)
             {
-                if (hasPermissions( getApplicationContext()  ,PERMISSIONS) )
+                if (hasPermissions( CONTEXT  ,PERMISSIONS) )
                 {
                     switch (mCurrentFrag)
                     {
