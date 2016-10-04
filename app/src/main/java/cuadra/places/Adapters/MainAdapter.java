@@ -3,6 +3,7 @@ package cuadra.places.Adapters;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.util.Log;
 
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.Fragments.PlaceholderFragment;
@@ -13,6 +14,9 @@ import cuadra.places.Fragments.PlaceholderFragment;
 
 public class MainAdapter extends FragmentPagerAdapter
 {
+    public static final int MAP_POSITION = 0;
+    public static final int FIRE_NOTES_POSITION = 1;
+    public static final int FRAGMENT_POSITION = 2;
 
     public MainAdapter(FragmentManager fm)
     {
@@ -24,11 +28,11 @@ public class MainAdapter extends FragmentPagerAdapter
     {
         switch(position)
         {
-            case 0:
+            case MAP_POSITION:
                 return PlaceholderFragment.newInstance(1);
-            case 1: //EN MEDIO
+            case FIRE_NOTES_POSITION: //EN MEDIO
                 return FireNotes.newInstance();
-            case 2:
+            case FRAGMENT_POSITION:
                 return PlaceholderFragment.newInstance(3);
         }
         return null;
@@ -45,11 +49,11 @@ public class MainAdapter extends FragmentPagerAdapter
     {
         switch (position)
         {
-            case 0:
+            case MAP_POSITION:
                 return "Map";
-            case 1:
+            case FIRE_NOTES_POSITION:
                 return "Notes";
-            case 2:
+            case FRAGMENT_POSITION:
                 return "Other";
         }
         return null;

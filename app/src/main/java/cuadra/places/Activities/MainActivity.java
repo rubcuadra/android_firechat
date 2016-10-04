@@ -1,6 +1,7 @@
 package cuadra.places.Activities;
 
 import android.Manifest;
+
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -26,6 +28,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 
 import android.widget.Toast;
@@ -53,8 +56,11 @@ import cuadra.places.Adapters.MainAdapter;
 import cuadra.places.CodelabPreferences;
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.R;
-
+import android.support.v4.app.Fragment;
 import static android.R.drawable.presence_audio_busy;
+import static cuadra.places.Adapters.MainAdapter.FIRE_NOTES_POSITION;
+import static cuadra.places.Adapters.MainAdapter.FRAGMENT_POSITION;
+import static cuadra.places.Adapters.MainAdapter.MAP_POSITION;
 
 public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFragmentInteractionListener,
@@ -76,6 +82,8 @@ public class MainActivity extends AppCompatActivity implements
     private MainAdapter mSectionsPagerAdapter;
     private ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient;
+    private int mCurrentFrag;
+
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
@@ -87,7 +95,6 @@ public class MainActivity extends AppCompatActivity implements
     private MediaRecorder mRecorder = null;
     private MediaPlayer   mPlayer = null;
 
-    private FloatingActionButton fab_play;
     @Override
     protected void onCreate(Bundle savedInstanceState)
     {
@@ -104,6 +111,8 @@ public class MainActivity extends AppCompatActivity implements
         mAdView.loadAd(adRequest);
          */
         setPager();
+
+
     }
 
     private void causeCrash()
@@ -152,7 +161,9 @@ public class MainActivity extends AppCompatActivity implements
                 {
                     mFileName=getfilePathFromAudioUri(data.getData());
                     Log.d(TAG,mFileName); //PUEDE SER null pero es raro el caso
-                    fab_play.setVisibility(View.VISIBLE);
+
+                    FireNotes fn = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
+                    fn.setFileName(mFileName);
                 }
                 else
                 {
@@ -197,12 +208,29 @@ public class MainActivity extends AppCompatActivity implements
 
     public void setPager()
     {
+        mCurrentFrag=1; //De enmedio
         mSectionsPagerAdapter = new MainAdapter(getSupportFragmentManager());
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
-        mViewPager.setCurrentItem(1); //De enmedio
+        mViewPager.setCurrentItem(mCurrentFrag);
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
+        {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels)
+            {
+
+            }
+            @Override
+            public void onPageSelected(int position)
+            {
+                mCurrentFrag=position;
+                Log.d(TAG, String.valueOf(mCurrentFrag));
+            }
+            @Override
+            public void onPageScrollStateChanged(int state) {}
+        });
     }
     public void setFirebaseConfigs() // Apply config settings and default values.
     {
@@ -331,49 +359,30 @@ public class MainActivity extends AppCompatActivity implements
 
     public void setFAB()
     {
-        mFileName = Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
-
-        Log.d(TAG,mFileName);
-        final FloatingActionButton fab_record = (FloatingActionButton) findViewById(R.id.fab);
-        fab_play= (FloatingActionButton) findViewById(R.id.fab_temporal);
-
-        fab_record.setOnClickListener(new View.OnClickListener()
+        //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener()
         {
-            boolean mStartRecording = true;
             @Override
             public void onClick(View view)
             {
                 if (hasPermissions( getApplicationContext()  ,PERMISSIONS) )
                 {
-                    Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
-                    startActivityForResult(intent, RECORD_INTENT);
-                    //onRecord(mStartRecording);
-                    //Snackbar.make(view, mStartRecording ? "Starting to record" : "Stopping record", Snackbar.LENGTH_LONG)
-                    //        .setAction("Action", null).show();
-                    //mStartRecording = !mStartRecording;
+                    switch (mCurrentFrag)
+                    {
+                        case MAP_POSITION:
+                            break;
+                        case FIRE_NOTES_POSITION: //CALL TO RECORD
+                            Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+                            startActivityForResult(intent, RECORD_INTENT);
+                            break;
+                        case FRAGMENT_POSITION:
+                            break;
+                    }
                 }
-                else
-                {
-                    askPermissions();
-                }
+                else {askPermissions();}
             }
         });
-
-        fab_play.setOnClickListener(new View.OnClickListener()
-        {
-            boolean mStartPlaying = true;
-
-            @Override
-            public void onClick(View view)
-            {
-
-                onPlay(mStartPlaying);
-                Snackbar.make(view, mStartPlaying ? "Starting to play" : "Stopping note", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                mStartPlaying = !mStartPlaying;
-            }
-        });
-        fab_play.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -386,7 +395,8 @@ public class MainActivity extends AppCompatActivity implements
             mRecorder = null;
         }
 
-        if (mPlayer != null) {
+        if (mPlayer != null)
+        {
             mPlayer.release();
             mPlayer = null;
         }
@@ -432,6 +442,11 @@ public class MainActivity extends AppCompatActivity implements
             return cursor.getString(columnIndex);
         }
         return null;
+    }
+
+    public Fragment getFragmentAtPosition(int index)
+    {
+        return getSupportFragmentManager().findFragmentByTag("android:switcher:"+R.id.container+":"+index);
     }
 }
 

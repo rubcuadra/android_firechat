@@ -49,6 +49,7 @@ public class FireNotes extends Fragment
     private static final String F_TAG = "Notes_Fragment";
 
 
+    private String mfileName;
     private String mUsername;
     private String mPhotoUrl;
 
@@ -293,6 +294,10 @@ public class FireNotes extends Fragment
             messengerImageView = (CircleImageView) itemView.findViewById(R.id.messengerImageView);
         }
     }
-
+    public void setFileName(String newFile)
+    {
+        mfileName = newFile;
+        Log.d(F_TAG,mfileName);
+    }
 
 }
