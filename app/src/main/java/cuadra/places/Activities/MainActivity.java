@@ -3,26 +3,19 @@ package cuadra.places.Activities;
 import android.Manifest;
 
 import android.animation.Animator;
-import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
-import android.media.MediaPlayer;
-import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
-import android.provider.ContactsContract;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -35,7 +28,6 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 
-import android.view.animation.AnimationUtils;
 import android.widget.Toast;
 
 import com.google.android.gms.appinvite.AppInvite;
@@ -50,10 +42,6 @@ import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -62,46 +50,47 @@ import cuadra.places.CodelabPreferences;
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.R;
 import android.support.v4.app.Fragment;
-import static android.R.drawable.presence_audio_busy;
+
+import static android.R.drawable.ic_menu_add;
+import static android.R.drawable.ic_menu_compass;
+import static android.R.drawable.ic_menu_send;
+import static android.R.drawable.ic_popup_sync;
+
 import static cuadra.places.Adapters.MainAdapter.FIRE_NOTES_POSITION;
 import static cuadra.places.Adapters.MainAdapter.FRAGMENT_POSITION;
 import static cuadra.places.Adapters.MainAdapter.MAP_POSITION;
+import static cuadra.places.Adapters.MainAdapter.SECTIONS;
 
 public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFragmentInteractionListener,
         GoogleApiClient.OnConnectionFailedListener
 
 {
+    //CONSTANTS
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INVITE = 1;
     private static final int RECORD_INTENT = 2;
     private static final int PERMISSIONS_ALL=3;
-
     private static final String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO};
-
-
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
 
+    //Vars
     private MainAdapter mSectionsPagerAdapter;
     private ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient;
     private int mCurrentFrag;
     private FloatingActionButton fab;
     private Context CONTEXT;
-
-    private Drawable sec;
-    private Drawable one;
+    private Drawable[] mfab_icons;
+    private Drawable mSend_icon;
 
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private FirebaseAnalytics mFirebaseAnalytics;
-
-    //RECORDER
-    private static String mFileName = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -110,18 +99,19 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));//SetToolbar
         CONTEXT = getApplicationContext();
+        mSend_icon = ContextCompat.getDrawable(CONTEXT,ic_menu_send);
+        fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(onFABClick);
         setGoogleAPI();
         setAuth();
         setFirebaseConfigs();
-        setFAB(); //FloatingActionButton
+        //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
         /*
         mAdView = (AdView) findViewById(R.id.adView);
         AdRequest adRequest = new AdRequest.Builder().build();
         mAdView.loadAd(adRequest);
          */
         setPager();
-
-
     }
 
     private void causeCrash()
@@ -168,17 +158,23 @@ public class MainActivity extends AppCompatActivity implements
             case RECORD_INTENT:
                 if (resultCode == RESULT_OK)
                 {
-                    mFileName=getfilePathFromAudioUri(data.getData());
+                    String mFileName = getfilePathFromAudioUri(data.getData());
                     Log.d(TAG,mFileName); //PUEDE SER null pero es raro el caso
                     FireNotes fn = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
                     fn.setFileName(mFileName);
+                    //CAMBIAR Fab icon y onClickListener
+                    fab.setImageDrawable(mSend_icon);
+                    fab.setOnClickListener(onNextFABClick);
+
                 }
                 else
                 {
+                    Bundle payload = new Bundle();
+                    payload.putString(FirebaseAnalytics.Param.VALUE, "not recorded");
+                    mFirebaseAnalytics.logEvent("Records", payload);
                     //No se guardo la grabacion o eso dijo la otra app
                     Log.d(TAG, "Failed to record audio.");
                 }
-
                 break;
             default:
                 break;
@@ -217,63 +213,48 @@ public class MainActivity extends AppCompatActivity implements
 
     public void setPager()
     {
-        one = ContextCompat.getDrawable(CONTEXT,R.drawable.common_plus_signin_btn_text_light);
-        sec = ContextCompat.getDrawable(CONTEXT,R.drawable.common_ic_googleplayservices);
-        mCurrentFrag=1; //De enmedio
+
+        mfab_icons = new Drawable[SECTIONS];
+        mfab_icons[MAP_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_menu_compass);
+        mfab_icons[FIRE_NOTES_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_menu_add);
+        mfab_icons[FRAGMENT_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_popup_sync);
+
+        mCurrentFrag=FIRE_NOTES_POSITION; //FIRE NOTES AS FIRST FRAG
         mSectionsPagerAdapter = new MainAdapter(getSupportFragmentManager());
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
         mViewPager.setCurrentItem(mCurrentFrag);
+
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
         {
-            boolean f = true;
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
             @Override
             public void onPageScrollStateChanged(int state) {}
             @Override
-            public void onPageSelected(int position)
+            public void onPageSelected(final int position)
             {
                 mCurrentFrag=position;
-
-                ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 90f);
-                anim.setDuration(100);
+                ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 360f);
+                anim.setDuration(120);
                 anim.setRepeatCount(1);
                 anim.addListener(new Animator.AnimatorListener()
                 {
                     @Override
                     public void onAnimationStart(Animator animator) {}
                     @Override
-                    public void onAnimationEnd(Animator animator)
-                    {
-
-                    }
+                    public void onAnimationEnd(Animator animator) {}
                     @Override
                     public void onAnimationCancel(Animator animator) {}
                     @Override
                     public void onAnimationRepeat(Animator animator)
                     {
-                        fab.setImageDrawable( f?one:sec);
-                        f=!f;
+                        fab.setImageDrawable(mfab_icons[position]);
                     }
                 });
                 anim.start();
-                //AnimatorSet animatorSet = new AnimatorSet();
-                //ObjectAnimator otherAnim = ObjectAnimator.ofFloat(fab, "alpha", 1f, 0f);
-                //otherAnim.setDuration(500);
-                //animatorSet.play(anim).with(otherAnim);
-                //animatorSet.start();
-
-
-                /*
-                if (mCurrentFrag!=1)
-                    fab.hide();
-                else
-                    fab.show();
-                */
-
             }
         });
     }
@@ -319,46 +300,16 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onFragmentInteraction(Uri uri)
+    public void onFireNotesFragmentInteraction()
     {
-
+        //ESTO LO INVOCO EL FRAGMENTO
     }
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult)
     {
-        // An unresolvable error has occurred and Google APIs (including Sign-In) will not
-        // be available.
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
         Toast.makeText(this, "Google Play Services error.", Toast.LENGTH_SHORT).show();
-    }
-
-    public void setFAB()
-    {
-        //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
-        fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
-            {
-                if (hasPermissions( CONTEXT  ,PERMISSIONS) )
-                {
-                    switch (mCurrentFrag)
-                    {
-                        case MAP_POSITION:
-                            break;
-                        case FIRE_NOTES_POSITION: //CALL TO RECORD
-                            Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
-                            startActivityForResult(intent, RECORD_INTENT);
-                            break;
-                        case FRAGMENT_POSITION:
-                            break;
-                    }
-                }
-                else {askPermissions();}
-            }
-        });
     }
 
     public static boolean hasPermissions(Context context, String... permissions)
@@ -407,5 +358,46 @@ public class MainActivity extends AppCompatActivity implements
     {
         return getSupportFragmentManager().findFragmentByTag("android:switcher:"+R.id.container+":"+index);
     }
+    // Create an anonymous implementation of OnClickListener
+    private View.OnClickListener onFABClick = new View.OnClickListener()
+    {
+        public void onClick(View v)
+        {
+            if (hasPermissions(CONTEXT,PERMISSIONS))
+            {
+                switch (mCurrentFrag)
+                {
+                    case MAP_POSITION:
+                        break;
+                    case FIRE_NOTES_POSITION: //CALL TO RECORD
+                        Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+                        startActivityForResult(intent, RECORD_INTENT);
+                        break;
+                    case FRAGMENT_POSITION:
+                        break;
+                }
+            }
+            else {askPermissions();}
+        }
+    };
+
+    private View.OnClickListener onNextFABClick = new View.OnClickListener()
+    {
+        public void onClick(View v)
+        {
+            switch (mCurrentFrag)
+                {
+                    case MAP_POSITION:
+                        break;
+                    case FIRE_NOTES_POSITION: //CALL TO SEND
+                        break;
+                    case FRAGMENT_POSITION:
+                        break;
+                }
+        }
+    };
+
+
+
 }
 

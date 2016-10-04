@@ -4,14 +4,11 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
-import android.net.Uri;
-import android.nfc.Tag;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -24,10 +21,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
-import android.widget.TextView;
 
-import com.bumptech.glide.Glide;
-import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -36,20 +30,19 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
-import org.w3c.dom.Text;
-
 import java.io.File;
 import java.io.IOException;
 
+import cuadra.places.Adapters.NotesAdapter;
 import cuadra.places.CodelabPreferences;
 import cuadra.places.FriendlyMessage;
 
+import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.R;
-import de.hdodenhof.circleimageview.CircleImageView;
 
 import static cuadra.places.Activities.MainActivity.DEFAULT_MSG_LENGTH_LIMIT;
 
-public class FireNotes extends Fragment
+public class FireNotes extends Fragment implements FirebaseAdapterInterface
 {
     //private static final String ARG_USERNAME = "param1";
     //private static final String ARG_PHOTO_URL = "param2";
@@ -76,13 +69,12 @@ public class FireNotes extends Fragment
     private ProgressBar mProgressBar;
     private EditText mMessageEditText;
     private ConstraintLayout new_audio_note_layout;
-
     private Button playButton;
     private Button cancelButton;
 
     //FIREBASE
     private DatabaseReference mFirebaseDatabaseReference;
-    private FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder> mFirebaseAdapter;
+    private NotesAdapter mFirebaseAdapter;
     private SharedPreferences mSharedPreferences;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private FirebaseUser mUser;
@@ -130,8 +122,7 @@ public class FireNotes extends Fragment
             public void onClick(View view)
             {
                 closeAudioLayout();
-                boolean deleted = (new File(mfileName)).delete();
-                Log.d(F_TAG,deleted+": Deleted file "+mfileName);
+                deleteFile();
             }
         });
 
@@ -146,35 +137,8 @@ public class FireNotes extends Fragment
             }
         });
 
-        //FIREBASE MSGS
-        mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(FriendlyMessage.class,
-                R.layout.item_message,
-                MessageViewHolder.class,
-                mFirebaseDatabaseReference.child(MESSAGES_CHILD))
-        {
-
-            @Override
-            protected void populateViewHolder(MessageViewHolder viewHolder, FriendlyMessage friendlyMessage, int position)
-            {
-                mProgressBar.setVisibility(ProgressBar.INVISIBLE);
-                viewHolder.messageTextView.setText(friendlyMessage.getText());
-                viewHolder.messengerTextView.setText(friendlyMessage.getName());
-
-                if (friendlyMessage.getPhotoUrl() == null)
-                {
-                    viewHolder.messengerImageView.setImageDrawable(ContextCompat
-                                    .getDrawable(CONTEXT,
-                                            R.drawable.ic_account_circle_black_36dp));
-                } else
-                {
-                    Glide.with(CONTEXT)
-                            .load(friendlyMessage.getPhotoUrl())
-                            .into(viewHolder.messengerImageView);
-                }
-            }
-        };
-
-
+        //Start Adapter for Firebase Messages
+        mFirebaseAdapter = new NotesAdapter(getContext(),this,mFirebaseDatabaseReference.child(MESSAGES_CHILD));
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver()
         {
             @Override
@@ -194,12 +158,10 @@ public class FireNotes extends Fragment
                 }
             }
         });
-
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
-
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(CONTEXT);
-
+        //Write Message
         mMessageEditText = (EditText) view.findViewById(R.id.messageEditText);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
                 .getInt(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
@@ -240,11 +202,11 @@ public class FireNotes extends Fragment
         return view;
     }
 
-    public void onButtonPressed(Uri uri)
+    public void OnElementClick()
     {
         if (mListener != null)
         {
-            mListener.onFragmentInteraction(uri);
+            mListener.onFireNotesFragmentInteraction();
         }
     }
 
@@ -311,33 +273,17 @@ public class FireNotes extends Fragment
         Log.d(F_TAG, "FML is: " + friendly_msg_length);
     }
 
-    //SE COMUNICARA CON MAIN
-    public interface OnFragmentInteractionListener
-    {
-        void onFragmentInteraction(Uri uri);
-    }
+    public void OnPopulate()
+    {hideProgressBar();}
+    public void hideProgressBar()
+    {mProgressBar.setVisibility(ProgressBar.INVISIBLE);}
 
-    public static class MessageViewHolder extends RecyclerView.ViewHolder
-    {
-        public TextView messageTextView;
-        public TextView messengerTextView;
-        public CircleImageView messengerImageView;
-
-        public MessageViewHolder(View v)
-        {
-            super(v);
-            messageTextView = (TextView) itemView.findViewById(R.id.messageTextView);
-            messengerTextView = (TextView) itemView.findViewById(R.id.messengerTextView);
-            messengerImageView = (CircleImageView) itemView.findViewById(R.id.messengerImageView);
-        }
-    }
     public void setFileName(String newFile)
     {
         mfileName = newFile;
         Log.d(F_TAG,mfileName);
         openAudioLayout();
     }
-
     protected void openAudioLayout()
     {
         ValueAnimator anim = ValueAnimator.ofInt(new_audio_note_layout.getMeasuredHeightAndState(),ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -370,7 +316,6 @@ public class FireNotes extends Fragment
         });
         anim.start();
     }
-
     private void startPlaying()
     {
         playButton.setText("Stop");
@@ -397,14 +342,27 @@ public class FireNotes extends Fragment
             Log.e(F_TAG, "prepare() failed");
         }
     }
-
     private void stopPlaying()
     {
         playButton.setText("Play");
         mPlayer.release();
         mPlayer = null;
     }
-
+    private void deleteFile()
+    {
+        if(mfileName!=null)
+        {
+            boolean deleted = (new File(mfileName)).delete();
+            Log.d(F_TAG,deleted+": Deleted file "+mfileName);
+            mfileName=null;
+        }
+    }
+    @Override
+    public void onDestroyView()
+    {
+        super.onDestroyView();
+        deleteFile();
+    }
     @Override
     public void onPause()
     {
@@ -415,4 +373,6 @@ public class FireNotes extends Fragment
             mPlayer = null;
         }
     }
+
+    public interface OnFragmentInteractionListener {void onFireNotesFragmentInteraction();}
 }

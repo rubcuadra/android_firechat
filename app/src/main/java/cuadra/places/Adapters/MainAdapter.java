@@ -17,11 +17,10 @@ public class MainAdapter extends FragmentPagerAdapter
     public static final int MAP_POSITION = 0;
     public static final int FIRE_NOTES_POSITION = 1;
     public static final int FRAGMENT_POSITION = 2;
+    public static final int SECTIONS=3;
 
-    public MainAdapter(FragmentManager fm)
-    {
-        super(fm);
-    }
+    public MainAdapter(FragmentManager fm) {super(fm);}
+
 
     @Override
     public Fragment getItem(int position)
@@ -41,7 +40,7 @@ public class MainAdapter extends FragmentPagerAdapter
     @Override
     public int getCount()
     {
-        return 3;
+        return SECTIONS;
     }
 
     @Override
