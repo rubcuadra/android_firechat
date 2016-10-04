@@ -2,6 +2,7 @@ package cuadra.places.Fragments;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -32,6 +33,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
+import java.io.IOException;
+
 import cuadra.places.CodelabPreferences;
 import cuadra.places.FriendlyMessage;
 
@@ -48,11 +51,15 @@ public class FireNotes extends Fragment
     public static final String MESSAGES_CHILD = "messages";
     private static final String F_TAG = "Notes_Fragment";
 
-
+    //VARS
     private String mfileName;
     private String mUsername;
     private String mPhotoUrl;
 
+    //AUDIO
+    private MediaPlayer mPlayer = null;
+
+    //INTERACTIONS
     private OnFragmentInteractionListener mListener;
 
     //Views
@@ -300,4 +307,46 @@ public class FireNotes extends Fragment
         Log.d(F_TAG,mfileName);
     }
 
+
+    private void startPlaying()
+    {
+        mPlayer = new MediaPlayer();
+        try
+        {
+            mPlayer.setDataSource(mfileName);
+            mPlayer.prepare();
+            mPlayer.start();
+        } catch (IOException e)
+        {
+            Log.e(F_TAG, "prepare() failed");
+        }
+    }
+
+    private void onPlay(boolean start)
+    {
+        if (start)
+        {
+            startPlaying();
+        } else
+        {
+            stopPlaying();
+        }
+    }
+
+    private void stopPlaying()
+    {
+        mPlayer.release();
+        mPlayer = null;
+    }
+
+    @Override
+    public void onPause()
+    {
+        super.onPause();
+        if (mPlayer != null)
+        {
+            mPlayer.release();
+            mPlayer = null;
+        }
+    }
 }

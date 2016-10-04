@@ -92,8 +92,6 @@ public class MainActivity extends AppCompatActivity implements
 
     //RECORDER
     private static String mFileName = null;
-    private MediaRecorder mRecorder = null;
-    private MediaPlayer   mPlayer = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -161,13 +159,13 @@ public class MainActivity extends AppCompatActivity implements
                 {
                     mFileName=getfilePathFromAudioUri(data.getData());
                     Log.d(TAG,mFileName); //PUEDE SER null pero es raro el caso
-
                     FireNotes fn = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
                     fn.setFileName(mFileName);
                 }
                 else
                 {
-
+                    //No se guardo la grabacion o eso dijo la otra app
+                    Log.d(TAG, "Failed to record audio.");
                 }
 
                 break;
@@ -218,18 +216,15 @@ public class MainActivity extends AppCompatActivity implements
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
         {
             @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels)
-            {
-
-            }
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+            @Override
+            public void onPageScrollStateChanged(int state) {}
             @Override
             public void onPageSelected(int position)
             {
                 mCurrentFrag=position;
-                Log.d(TAG, String.valueOf(mCurrentFrag));
+                //Modificar FAB
             }
-            @Override
-            public void onPageScrollStateChanged(int state) {}
         });
     }
     public void setFirebaseConfigs() // Apply config settings and default values.
@@ -288,75 +283,6 @@ public class MainActivity extends AppCompatActivity implements
         Toast.makeText(this, "Google Play Services error.", Toast.LENGTH_SHORT).show();
     }
 
-    //RECORD
-    private void onRecord(boolean start)
-    {
-        if (start)
-        {
-            startRecording();
-        } else
-        {
-            stopRecording();
-        }
-    }
-
-    private void onPlay(boolean start)
-    {
-        if (start)
-        {
-            startPlaying();
-        } else
-        {
-            stopPlaying();
-        }
-    }
-
-    private void startPlaying()
-    {
-        mPlayer = new MediaPlayer();
-        try
-        {
-            mPlayer.setDataSource(mFileName);
-            mPlayer.prepare();
-            mPlayer.start();
-        } catch (IOException e)
-        {
-            Log.e(TAG, "prepare() failed");
-        }
-    }
-
-    private void stopPlaying()
-    {
-        mPlayer.release();
-        mPlayer = null;
-    }
-
-    private void startRecording()
-    {
-        mRecorder = new MediaRecorder();
-        mRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-        mRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
-        mRecorder.setOutputFile(mFileName);
-        mRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
-
-        try
-        {
-            mRecorder.prepare();
-        } catch (IOException e)
-        {
-            Log.e(TAG, "prepare() failed");
-        }
-
-        mRecorder.start();
-    }
-
-    private void stopRecording()
-    {
-        mRecorder.stop();
-        mRecorder.release();
-        mRecorder = null;
-    }
-
     public void setFAB()
     {
         //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
@@ -383,23 +309,6 @@ public class MainActivity extends AppCompatActivity implements
                 else {askPermissions();}
             }
         });
-    }
-
-    @Override
-    public void onPause()
-    {
-        super.onPause();
-        if (mRecorder != null)
-        {
-            mRecorder.release();
-            mRecorder = null;
-        }
-
-        if (mPlayer != null)
-        {
-            mPlayer.release();
-            mPlayer = null;
-        }
     }
 
     public static boolean hasPermissions(Context context, String... permissions)
