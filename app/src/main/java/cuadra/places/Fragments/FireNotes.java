@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
@@ -68,6 +69,7 @@ public class FireNotes extends Fragment
     private LinearLayoutManager mLinearLayoutManager;
     private ProgressBar mProgressBar;
     private EditText mMessageEditText;
+    private ConstraintLayout cl;
 
     //FIREBASE
     private DatabaseReference mFirebaseDatabaseReference;
@@ -109,6 +111,7 @@ public class FireNotes extends Fragment
         mLinearLayoutManager = new LinearLayoutManager(CONTEXT);
         mLinearLayoutManager.setStackFromEnd(true);
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
+        cl = (ConstraintLayout) view.findViewById(R.id.audio_constraint_layout);
 
         //FIREBASE SETUP
 
