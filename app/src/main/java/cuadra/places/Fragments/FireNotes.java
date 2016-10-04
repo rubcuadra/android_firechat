@@ -1,9 +1,11 @@
 package cuadra.places.Fragments;
 
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.nfc.Tag;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -34,6 +36,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 
+import org.w3c.dom.Text;
+
+import java.io.File;
 import java.io.IOException;
 
 import cuadra.places.CodelabPreferences;
@@ -59,6 +64,7 @@ public class FireNotes extends Fragment
 
     //AUDIO
     private MediaPlayer mPlayer = null;
+    private boolean play=true;
 
     //INTERACTIONS
     private OnFragmentInteractionListener mListener;
@@ -69,7 +75,10 @@ public class FireNotes extends Fragment
     private LinearLayoutManager mLinearLayoutManager;
     private ProgressBar mProgressBar;
     private EditText mMessageEditText;
-    private ConstraintLayout cl;
+    private ConstraintLayout new_audio_note_layout;
+
+    private Button playButton;
+    private Button cancelButton;
 
     //FIREBASE
     private DatabaseReference mFirebaseDatabaseReference;
@@ -111,10 +120,33 @@ public class FireNotes extends Fragment
         mLinearLayoutManager = new LinearLayoutManager(CONTEXT);
         mLinearLayoutManager.setStackFromEnd(true);
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
-        cl = (ConstraintLayout) view.findViewById(R.id.audio_constraint_layout);
+        new_audio_note_layout = (ConstraintLayout) view.findViewById(R.id.audio_constraint_layout);
+        playButton = (Button) view.findViewById(R.id.playButton);
+        cancelButton = (Button) view.findViewById(R.id.cancelButton);
 
-        //FIREBASE SETUP
+        cancelButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                closeAudioLayout();
+                boolean deleted = (new File(mfileName)).delete();
+                Log.d(F_TAG,deleted+": Deleted file "+mfileName);
+            }
+        });
 
+        playButton.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View view)
+            {
+                if (play)   startPlaying();
+                else        stopPlaying();
+                play = !play;
+            }
+        });
+
+        //FIREBASE MSGS
         mFirebaseAdapter = new FirebaseRecyclerAdapter<FriendlyMessage, MessageViewHolder>(FriendlyMessage.class,
                 R.layout.item_message,
                 MessageViewHolder.class,
@@ -208,7 +240,6 @@ public class FireNotes extends Fragment
         return view;
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri)
     {
         if (mListener != null)
@@ -237,13 +268,9 @@ public class FireNotes extends Fragment
         mListener = null;
     }
 
-
     public void fetchConfig()
     {
         long cacheExpiration = 3600; //3600 1 hour in seconds
-        // If developer mode is enabled reduce cacheExpiration to 0 so that
-        // each fetch goes to the server. This should not be used in release
-        // builds.
 
         if (mFirebaseRemoteConfig.getInfo().getConfigSettings()
                 .isDeveloperModeEnabled())
@@ -308,36 +335,72 @@ public class FireNotes extends Fragment
     {
         mfileName = newFile;
         Log.d(F_TAG,mfileName);
+        openAudioLayout();
     }
 
+    protected void openAudioLayout()
+    {
+        ValueAnimator anim = ValueAnimator.ofInt(new_audio_note_layout.getMeasuredHeightAndState(),ViewGroup.LayoutParams.WRAP_CONTENT);
+        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
+        {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator)
+            {
+                int val = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = new_audio_note_layout.getLayoutParams();
+                layoutParams.height = val;
+                new_audio_note_layout.setLayoutParams(layoutParams);
+            }
+        });
+        anim.start();
+    }
+    protected void closeAudioLayout()
+    {
+        ValueAnimator anim = ValueAnimator.ofInt(new_audio_note_layout.getMeasuredHeightAndState(),1);
+        anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
+        {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator)
+            {
+                int val = (Integer) valueAnimator.getAnimatedValue();
+                ViewGroup.LayoutParams layoutParams = new_audio_note_layout.getLayoutParams();
+                layoutParams.height = val;
+                new_audio_note_layout.setLayoutParams(layoutParams);
+            }
+        });
+        anim.start();
+    }
 
     private void startPlaying()
     {
+        playButton.setText("Stop");
+
         mPlayer = new MediaPlayer();
         try
         {
             mPlayer.setDataSource(mfileName);
             mPlayer.prepare();
             mPlayer.start();
+
+            mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener()
+            {
+                @Override
+                public void onCompletion(MediaPlayer mediaPlayer)
+                {
+                    stopPlaying();
+                    play=true;
+                }
+            });
+
         } catch (IOException e)
         {
             Log.e(F_TAG, "prepare() failed");
         }
     }
 
-    private void onPlay(boolean start)
-    {
-        if (start)
-        {
-            startPlaying();
-        } else
-        {
-            stopPlaying();
-        }
-    }
-
     private void stopPlaying()
     {
+        playButton.setText("Play");
         mPlayer.release();
         mPlayer = null;
     }
