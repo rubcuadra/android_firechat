@@ -25,7 +25,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
 
 import android.widget.Toast;
@@ -53,7 +52,6 @@ import android.support.v4.app.Fragment;
 
 import static android.R.drawable.ic_menu_add;
 import static android.R.drawable.ic_menu_compass;
-import static android.R.drawable.ic_menu_send;
 import static android.R.drawable.ic_popup_sync;
 
 import static cuadra.places.Adapters.MainAdapter.FIRE_NOTES_POSITION;
@@ -62,7 +60,7 @@ import static cuadra.places.Adapters.MainAdapter.MAP_POSITION;
 import static cuadra.places.Adapters.MainAdapter.SECTIONS;
 
 public class MainActivity extends AppCompatActivity implements
-        FireNotes.OnFragmentInteractionListener,
+        FireNotes.OnFireNotesFragmentInteractionListener,
         GoogleApiClient.OnConnectionFailedListener
 
 {
@@ -99,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));//SetToolbar
         CONTEXT = getApplicationContext();
-        mSend_icon = ContextCompat.getDrawable(CONTEXT,ic_menu_send);
+        mSend_icon = ContextCompat.getDrawable(CONTEXT, R.drawable.ic_send_white_24dp);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(onFABClick);
         setGoogleAPI();
@@ -237,27 +235,32 @@ public class MainActivity extends AppCompatActivity implements
             public void onPageSelected(final int position)
             {
                 mCurrentFrag=position;
-                ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 360f);
-                anim.setDuration(120);
-                anim.setRepeatCount(1);
-                anim.addListener(new Animator.AnimatorListener()
-                {
-                    @Override
-                    public void onAnimationStart(Animator animator) {}
-                    @Override
-                    public void onAnimationEnd(Animator animator) {}
-                    @Override
-                    public void onAnimationCancel(Animator animator) {}
-                    @Override
-                    public void onAnimationRepeat(Animator animator)
-                    {
-                        fab.setImageDrawable(mfab_icons[position]);
-                    }
-                });
-                anim.start();
+                changeFABIcon();
             }
         });
     }
+    public void changeFABIcon()
+    {
+        ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 360f);
+        anim.setDuration(120);
+        anim.setRepeatCount(1);
+        anim.addListener(new Animator.AnimatorListener()
+        {
+            @Override
+            public void onAnimationStart(Animator animator) {}
+            @Override
+            public void onAnimationEnd(Animator animator) {}
+            @Override
+            public void onAnimationCancel(Animator animator) {}
+            @Override
+            public void onAnimationRepeat(Animator animator)
+            {
+                fab.setImageDrawable(mfab_icons[mCurrentFrag]);
+            }
+        });
+        anim.start();
+    }
+
     public void setFirebaseConfigs() // Apply config settings and default values.
     {
         mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
@@ -300,9 +303,10 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void onFireNotesFragmentInteraction()
+    public void resetFAB()
     {
-        //ESTO LO INVOCO EL FRAGMENTO
+        fab.setOnClickListener(onFABClick);
+        changeFABIcon();
     }
 
     @Override

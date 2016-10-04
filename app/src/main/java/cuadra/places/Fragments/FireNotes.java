@@ -60,7 +60,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private boolean play=true;
 
     //INTERACTIONS
-    private OnFragmentInteractionListener mListener;
+    private OnFireNotesFragmentInteractionListener mListener;
 
     //Views
     private Button mSendButton;
@@ -123,6 +123,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             {
                 closeAudioLayout();
                 deleteFile();
+                if (mListener!=null)
+                    mListener.resetFAB();
             }
         });
 
@@ -206,7 +208,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     {
         if (mListener != null)
         {
-            mListener.onFireNotesFragmentInteraction();
+            //mListener.resetFAB()
         }
     }
 
@@ -214,12 +216,12 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public void onAttach(Context context)
     {
         super.onAttach(context);
-        if (context instanceof OnFragmentInteractionListener)
+        if (context instanceof OnFireNotesFragmentInteractionListener)
         {
-            mListener = (OnFragmentInteractionListener) context;
+            mListener = (OnFireNotesFragmentInteractionListener) context;
         } else
         {
-            throw new RuntimeException(context.toString()+" must implement OnFragmentInteractionListener");
+            throw new RuntimeException(context.toString()+" must implement OnFireNotesFragmentInteractionListener");
         }
     }
 
@@ -274,9 +276,14 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
 
     public void OnPopulate()
-    {hideProgressBar();}
+    {
+        hideProgressBar();
+    }
+
     public void hideProgressBar()
-    {mProgressBar.setVisibility(ProgressBar.INVISIBLE);}
+    {
+        mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+    }
 
     public void setFileName(String newFile)
     {
@@ -374,5 +381,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         }
     }
 
-    public interface OnFragmentInteractionListener {void onFireNotesFragmentInteraction();}
+    public interface OnFireNotesFragmentInteractionListener
+    {
+        void resetFAB();
+    }
 }
