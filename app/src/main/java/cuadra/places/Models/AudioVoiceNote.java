@@ -21,6 +21,7 @@ public class AudioVoiceNote
         this.title = title;
         this.size = size;
     }
+    public AudioVoiceNote(){}
 
     public String getDownloadUri() {
         return downloadUri;

@@ -10,33 +10,34 @@ import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.database.Query;
 
+import cuadra.places.Models.AudioVoiceNote;
 import cuadra.places.Models.FriendlyMessage;
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.R;
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class NotesAdapter extends FirebaseRecyclerAdapter<FriendlyMessage,NotesAdapter.MessageViewHolder>
+public class NotesAdapter extends FirebaseRecyclerAdapter<AudioVoiceNote,NotesAdapter.MessageViewHolder>
 {
     FirebaseAdapterInterface onPopulateListener;
     private Context CONTEXT;
 
     public NotesAdapter(Context context,FirebaseAdapterInterface listener,Query ref)
     {
-        super(FriendlyMessage.class,R.layout.item_message,MessageViewHolder.class,ref);
+        super(AudioVoiceNote.class,R.layout.item_message,MessageViewHolder.class,ref);
         this.CONTEXT = context;
         this.onPopulateListener = listener;
     }
 
     @Override
-    protected void populateViewHolder(MessageViewHolder viewHolder, FriendlyMessage friendlyMessage, int position)
+    protected void populateViewHolder(MessageViewHolder viewHolder, AudioVoiceNote audioVoiceNote, int position)
     {
 
         onPopulateListener.OnPopulate();
 
-        viewHolder.messageTextView.setText(friendlyMessage.getText());
-        viewHolder.messengerTextView.setText(friendlyMessage.getName());
+        viewHolder.messageTextView.setText("Pesa: "+audioVoiceNote.getSize().substring(0,audioVoiceNote.getSize().length()-3) +"kb");
+        viewHolder.messengerTextView.setText(audioVoiceNote.getUuid());
 
-        if (friendlyMessage.getPhotoUrl() == null)
+        /*if (friendlyMessage.getPhotoUrl() == null)
         {
             viewHolder.messengerImageView.setImageDrawable(ContextCompat
                     .getDrawable(CONTEXT, R.drawable.ic_account_circle_black_36dp));
@@ -44,6 +45,7 @@ public class NotesAdapter extends FirebaseRecyclerAdapter<FriendlyMessage,NotesA
         {
             Glide.with(CONTEXT).load(friendlyMessage.getPhotoUrl()).into(viewHolder.messengerImageView);
         }
+        */
     }
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder

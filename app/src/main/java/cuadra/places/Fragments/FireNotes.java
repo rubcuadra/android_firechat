@@ -59,7 +59,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     //private static final String ARG_PHOTO_URL = "param2";
     private static final String BUCKET_REFERENCE = "gs://the-places-youll-go.appspot.com";
     private static final String VOICE_NOTES_PATH = "voice-notes";
-    public static final String MESSAGES_CHILD = "messages";
+    public static final String MESSAGES_CHILD = "VOICE-NOTES";
     private static final String F_TAG = "Notes_Fragment";
 
     //VARS
@@ -165,13 +165,13 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             public void onItemRangeInserted(int positionStart, int itemCount)
             {
                 super.onItemRangeInserted(positionStart, itemCount);
-                int friendlyMessageCount = mFirebaseAdapter.getItemCount();
+                int audioVoiceNotes = mFirebaseAdapter.getItemCount();
                 int lastVisiblePosition = mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
                 // If the recycler view is initially being loaded or the
                 // user is at the bottom of the list, scroll to the bottom
                 // of the list to show the newly added message.
                 if (lastVisiblePosition == -1 ||
-                        (positionStart >= (friendlyMessageCount - 1) &&
+                        (positionStart >= (audioVoiceNotes - 1) &&
                                 lastVisiblePosition == (positionStart - 1)))
                 {
                     mMessageRecyclerView.scrollToPosition(positionStart);
