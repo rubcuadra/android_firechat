@@ -322,7 +322,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                     mNewNote.setValue( new AudioVoiceNote(uploaded_uri.toString(),
                             mUser.getUid(),
                             "Test",
-                            String.valueOf(taskSnapshot.getMetadata().getSizeBytes() ) ) );
+                            String.valueOf(taskSnapshot.getMetadata().getSizeBytes()),"","","",""));
+                    
                     mNewNote=mNewNote.getParent();
                     mFireStorageRef=mFireStorageRef.getParent();
                 }
@@ -500,7 +501,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                                 mNewNote.setValue( new AudioVoiceNote(uploaded_uri.toString(),
                                         mUser.getUid(),
                                         "Test",
-                                        String.valueOf(taskSnapshot.getMetadata().getSizeBytes() ) ) );
+                                        String.valueOf(taskSnapshot.getMetadata().getSizeBytes()),"","","","") );
                                 mNewNote=mNewNote.getParent();
                                 mFireStorageRef=mFireStorageRef.getParent();
                             }
