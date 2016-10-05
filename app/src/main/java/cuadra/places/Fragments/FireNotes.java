@@ -57,10 +57,7 @@ import static cuadra.places.Activities.MainActivity.DEFAULT_MSG_LENGTH_LIMIT;
 
 public class FireNotes extends Fragment implements FirebaseAdapterInterface
 {
-    //private static final String ARG_USERNAME = "param1";
-    //private static final String ARG_PHOTO_URL = "param2";
     private static final String BUCKET_REFERENCE = "gs://the-places-youll-go.appspot.com";
-    private static final String VOICE_NOTES_PATH = "voice-notes";
     public static final String MESSAGES_CHILD = "VOICE-NOTES";
     private static final String F_TAG = "Notes_Fragment";
 
@@ -116,7 +113,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         //Firebase Stuff
         mFirebaseRemoteConfig=FirebaseRemoteConfig.getInstance();
         mFirebaseDatabaseReference=FirebaseDatabase.getInstance().getReference();
-        mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(BUCKET_REFERENCE).child(VOICE_NOTES_PATH);
+        mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(BUCKET_REFERENCE).child(MESSAGES_CHILD);
         mNewNote=mFirebaseDatabaseReference.child("VOICE-NOTES");
         mCurrentVoiceNote = new AudioVoiceNote();
         mCurrentVoiceNote.setUser(mUser);

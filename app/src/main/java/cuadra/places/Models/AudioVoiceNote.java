@@ -120,4 +120,8 @@ public class AudioVoiceNote
         duration+= ":";
         duration+= seconds<10?"0"+seconds:seconds;
     }
+    public String getSizeInKb()
+    {
+        return size.substring(0,size.length()-3);
+    }
 }

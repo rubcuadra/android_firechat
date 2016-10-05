@@ -31,21 +31,19 @@ public class NotesAdapter extends FirebaseRecyclerAdapter<AudioVoiceNote,NotesAd
     @Override
     protected void populateViewHolder(MessageViewHolder viewHolder, AudioVoiceNote audioVoiceNote, int position)
     {
-
         onPopulateListener.OnPopulate();
 
-        viewHolder.messageTextView.setText("Pesa: "+audioVoiceNote.getSize().substring(0,audioVoiceNote.getSize().length()-3) +"kb");
-        viewHolder.messengerTextView.setText(audioVoiceNote.getUuid());
+        viewHolder.messageTextView.setText(audioVoiceNote.getuserName());
+        viewHolder.messengerTextView.setText(audioVoiceNote.getDuration() + "     " +audioVoiceNote.getSizeInKb()+"kb");
 
-        /*if (friendlyMessage.getPhotoUrl() == null)
+        if (audioVoiceNote.getPhotoUrl() == null)
         {
             viewHolder.messengerImageView.setImageDrawable(ContextCompat
                     .getDrawable(CONTEXT, R.drawable.ic_account_circle_black_36dp));
         } else
         {
-            Glide.with(CONTEXT).load(friendlyMessage.getPhotoUrl()).into(viewHolder.messengerImageView);
+            Glide.with(CONTEXT).load(audioVoiceNote.getPhotoUrl()).into(viewHolder.messengerImageView);
         }
-        */
     }
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder
