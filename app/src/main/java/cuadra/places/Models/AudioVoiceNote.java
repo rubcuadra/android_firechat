@@ -2,18 +2,19 @@ package cuadra.places.Models;
 
 import android.net.Uri;
 
+
 /**
  * Created by Ruben on 10/4/16.
  */
 
 public class AudioVoiceNote
 {
-    private Uri downloadUri;
+    private String downloadUri;
     private String uuid;
     private String title;
     private String size;
 
-    public AudioVoiceNote(Uri downloadUri, String uuid, String title, String size)
+    public AudioVoiceNote(String downloadUri, String uuid, String title, String size)
     {
         this.downloadUri = downloadUri;
         this.uuid = uuid;
@@ -21,11 +22,11 @@ public class AudioVoiceNote
         this.size = size;
     }
 
-    public Uri getDownloadUri() {
+    public String getDownloadUri() {
         return downloadUri;
     }
 
-    public void setDownloadUri(Uri downloadUri) {
+    public void setDownloadUri(String downloadUri) {
         this.downloadUri = downloadUri;
     }
 

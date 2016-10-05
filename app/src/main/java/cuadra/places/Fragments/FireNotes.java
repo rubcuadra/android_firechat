@@ -31,6 +31,8 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.OnPausedListener;
+import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
@@ -39,6 +41,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 import cuadra.places.Adapters.NotesAdapter;
 import cuadra.places.CodelabPreferences;
@@ -88,6 +91,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private FirebaseUser mUser;
     private StorageReference mFireStorageRef;
+    private DatabaseReference mNewNote;
 
     public FireNotes() {}
 
@@ -111,6 +115,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mFirebaseRemoteConfig=FirebaseRemoteConfig.getInstance();
         mFirebaseDatabaseReference=FirebaseDatabase.getInstance().getReference();
         mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(BUCKET_REFERENCE).child(VOICE_NOTES_PATH);
+        mNewNote=mFirebaseDatabaseReference.child("VOICE-NOTES");
     }
 
     @Override
@@ -293,16 +298,9 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         try
         {
             InputStream stream = new FileInputStream(new File(mfileName));
-
             String extension = mfileName.substring( mfileName.lastIndexOf(".")+1 );
-
-            final DatabaseReference newNote = mFirebaseDatabaseReference.child("VOICE-NOTES").push();
-
-            mFireStorageRef = mFireStorageRef.child(newNote.getKey()+"."+extension);
-
-            Log.d(F_TAG,newNote.toString());
-            Log.d(F_TAG,mFireStorageRef.getPath());
-
+            mNewNote= mNewNote.push();
+            mFireStorageRef = mFireStorageRef.child(mNewNote.getKey()+"."+extension);
 
             UploadTask uploadTask = mFireStorageRef.putStream(stream);
             uploadTask.addOnFailureListener(new OnFailureListener()
@@ -310,33 +308,47 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 @Override
                 public void onFailure(@NonNull Exception exception)
                 {
+                    Log.d(F_TAG,"Failed to upload");
+                    mNewNote=mNewNote.getParent();
+                    mFireStorageRef=mFireStorageRef.getParent();
+                    deleteFile();
                 }
             }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>()
             {
                 @Override
-                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
-                    // taskSnapshot.getMetadata() contains file metadata such as size, content-type, and download URL.
-
-
-                    newNote.setValue( new AudioVoiceNote(taskSnapshot.getDownloadUrl(),
-                                                            mUser.getUid(),
-                                                            "Test",
-                                                            String.valueOf(taskSnapshot.getTotalByteCount()) ) );
-
-                    Log.d(F_TAG,"URL DEL ARCHIVO SUBIDO: "+ taskSnapshot.getDownloadUrl() );
-                    Log.d(F_TAG,"DATOS DEL FILE "+taskSnapshot.getMetadata().toString());
-                    Log.d(F_TAG,"DATOS DEL FILE "+taskSnapshot.getTotalByteCount());
-
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
+                {
+                    Uri uploaded_uri = taskSnapshot.getDownloadUrl();
+                    mNewNote.setValue( new AudioVoiceNote(uploaded_uri.toString(),
+                            mUser.getUid(),
+                            "Test",
+                            String.valueOf(taskSnapshot.getMetadata().getSizeBytes() ) ) );
+                    mNewNote=mNewNote.getParent();
+                    mFireStorageRef=mFireStorageRef.getParent();
+                }
+            }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>()
+            {
+                @Override
+                public void onProgress(UploadTask.TaskSnapshot taskSnapshot)
+                {
+                    double progress = (100.0 * taskSnapshot.getBytesTransferred()) / taskSnapshot.getTotalByteCount();
+                    System.out.println("Upload is " + progress + "% done");
+                }
+            }).addOnPausedListener(new OnPausedListener<UploadTask.TaskSnapshot>()
+            {
+                @Override
+                public void onPaused(UploadTask.TaskSnapshot taskSnapshot)
+                {
+                    System.out.println("Upload is paused");
                 }
             });
+
         } catch (FileNotFoundException e)
         {
             Log.d(F_TAG,"File not found "+mfileName);
             mfileName=null;
             e.printStackTrace();
         }
-
-
     }
 
     public void OnPopulate()
@@ -371,7 +383,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         });
         anim.start();
     }
-    protected void closeAudioLayout()
+    public void closeAudioLayout()
     {
         ValueAnimator anim = ValueAnimator.ofInt(new_audio_note_layout.getMeasuredHeightAndState(),1);
         anim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener()
@@ -442,6 +454,68 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         {
             mPlayer.release();
             mPlayer = null;
+        }
+    }
+    @Override
+    public void onSaveInstanceState(Bundle outState)
+    {
+        super.onSaveInstanceState(outState);
+        // If there's an upload in progress, save the reference so you can query it later
+
+        if (mFireStorageRef != null)
+        {
+            outState.putString("reference", mFireStorageRef.toString());
+            outState.putString("register",  mNewNote.toString());
+        }
+    }
+
+    @Override
+    public void onActivityCreated(Bundle savedInstanceState)
+    {
+        super.onActivityCreated(savedInstanceState);
+        if (savedInstanceState!=null)
+        {
+            // If there was an upload in progress, get its reference and create a new StorageReference
+            final String stringRef = savedInstanceState.getString("reference");
+            if (stringRef == null) return;
+
+            mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(stringRef);
+            mNewNote = FirebaseDatabase.getInstance().getReferenceFromUrl(savedInstanceState.getString("register"));
+
+            // Find all UploadTasks under this StorageReference (in this example, there should be one)
+            List tasks = mFireStorageRef.getActiveUploadTasks();
+            if (tasks.size() > 0)
+            {
+                // Get the task monitoring the upload
+                UploadTask task = (UploadTask)tasks.get(0);
+
+                // Add new listeners to the task using an Activity scope
+                task.addOnSuccessListener(
+                        new OnSuccessListener<UploadTask.TaskSnapshot>()
+                        {
+                            @Override
+                            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
+                            {
+                                Uri uploaded_uri = taskSnapshot.getDownloadUrl();
+                                mNewNote.setValue( new AudioVoiceNote(uploaded_uri.toString(),
+                                        mUser.getUid(),
+                                        "Test",
+                                        String.valueOf(taskSnapshot.getMetadata().getSizeBytes() ) ) );
+                                mNewNote=mNewNote.getParent();
+                                mFireStorageRef=mFireStorageRef.getParent();
+                            }
+                        }).addOnFailureListener(new OnFailureListener()
+                        {
+                            @Override
+                            public void onFailure(@NonNull Exception exception)
+                            {
+                                Log.d(F_TAG,"Failed to upload");
+                                mNewNote=mNewNote.getParent();
+                                mFireStorageRef=mFireStorageRef.getParent();
+                                deleteFile();
+                            }
+                        });
+            }
         }
     }
 
