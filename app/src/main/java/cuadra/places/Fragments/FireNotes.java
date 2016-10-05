@@ -3,6 +3,7 @@ package cuadra.places.Fragments;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
@@ -27,6 +28,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.auth.api.model.StringList;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
@@ -64,12 +66,12 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 
     //VARS
     private String mfileName;
-    private String mUsername;
-    private String mPhotoUrl;
+
 
     //AUDIO
     private MediaPlayer mPlayer = null;
     private boolean play=true;
+    private AudioVoiceNote mCurrentVoiceNote;
 
     //INTERACTIONS
     private OnFireNotesFragmentInteractionListener mListener;
@@ -116,6 +118,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mFirebaseDatabaseReference=FirebaseDatabase.getInstance().getReference();
         mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(BUCKET_REFERENCE).child(VOICE_NOTES_PATH);
         mNewNote=mFirebaseDatabaseReference.child("VOICE-NOTES");
+        mCurrentVoiceNote = new AudioVoiceNote();
+        mCurrentVoiceNote.setUser(mUser);
     }
 
     @Override
@@ -318,12 +322,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
                 {
-                    Uri uploaded_uri = taskSnapshot.getDownloadUrl();
-                    mNewNote.setValue( new AudioVoiceNote(uploaded_uri.toString(),
-                            mUser.getUid(),
-                            "Test",
-                            String.valueOf(taskSnapshot.getMetadata().getSizeBytes()),"","","",""));
-                    
+                    mCurrentVoiceNote.setDownloadUri(String.valueOf(taskSnapshot.getDownloadUrl()));
+                    mCurrentVoiceNote.setSize(String.valueOf(taskSnapshot.getMetadata().getSizeBytes()));
+                    mNewNote.setValue(mCurrentVoiceNote);
+
                     mNewNote=mNewNote.getParent();
                     mFireStorageRef=mFireStorageRef.getParent();
                 }
@@ -365,8 +367,13 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public void setFileName(String newFile)
     {
         mfileName = newFile;
-        Log.d(F_TAG,mfileName);
+        Log.d(F_TAG,newFile);
+        MediaMetadataRetriever mmr = new MediaMetadataRetriever();
+        mmr.setDataSource(mfileName);
+        int duration = Integer.parseInt(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
+        mmr.release();
         openAudioLayout();
+        mCurrentVoiceNote.setDurationFromInt( duration);
     }
     protected void openAudioLayout()
     {
@@ -498,10 +505,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
                             {
                                 Uri uploaded_uri = taskSnapshot.getDownloadUrl();
-                                mNewNote.setValue( new AudioVoiceNote(uploaded_uri.toString(),
-                                        mUser.getUid(),
-                                        "Test",
-                                        String.valueOf(taskSnapshot.getMetadata().getSizeBytes()),"","","","") );
+                                mNewNote.setValue(mCurrentVoiceNote);
                                 mNewNote=mNewNote.getParent();
                                 mFireStorageRef=mFireStorageRef.getParent();
                             }

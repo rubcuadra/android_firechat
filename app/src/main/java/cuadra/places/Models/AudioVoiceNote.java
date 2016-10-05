@@ -2,6 +2,8 @@ package cuadra.places.Models;
 
 import android.net.Uri;
 
+import com.google.firebase.auth.FirebaseUser;
+
 
 /**
  * Created by Ruben on 10/4/16.
@@ -10,16 +12,19 @@ import android.net.Uri;
 public class AudioVoiceNote
 {
     private String downloadUri;
+
     private String uuid;        //Id del usuario que lo subio
+    private String userName;    //Nombre de usuario que lo subio
+    private String photoUrl;    //Photo of the user that uploaded note
+
     private String title;
     private String size;
-    private String userName;    //Nombre de usuario que lo subio
     private String description; //caracteres que describan la nota
-    private String photoUrl;    //Photo of the user that uploaded note
     private String duration;
+    private String since;
 
     public AudioVoiceNote(String downloadUri, String uuid, String title, String size,String userName,String description,
-                          String photoUrl, String duration)
+                          String photoUrl, String duration,String since)
     {
         this.downloadUri = downloadUri;
         this.uuid = uuid;
@@ -29,9 +34,17 @@ public class AudioVoiceNote
         this.description=description;
         this.photoUrl=photoUrl;
         this.duration = duration;
+        this.since = since;
 
     }
     public AudioVoiceNote(){}
+
+    public void setUser(FirebaseUser u)
+    {
+        photoUrl= String.valueOf(u.getPhotoUrl());
+        uuid = u.getUid();
+        userName=u.getDisplayName();
+    }
 
     public String getDownloadUri() {
         return downloadUri;
@@ -95,5 +108,16 @@ public class AudioVoiceNote
 
     public void setDuration(String duration) {
         this.duration = duration;
+    }
+
+    public void setDurationFromInt(int duration_in_mili_seconds)
+    {
+        int seconds = duration_in_mili_seconds/1000;
+        int minutes = seconds/60;
+        seconds -= minutes*60;
+        duration="";
+        duration+= minutes<10?"0"+minutes:minutes;
+        duration+= ":";
+        duration+= seconds<10?"0"+seconds:seconds;
     }
 }
