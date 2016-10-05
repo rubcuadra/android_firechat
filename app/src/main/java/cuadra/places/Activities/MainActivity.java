@@ -394,6 +394,8 @@ public class MainActivity extends AppCompatActivity implements
                     case MAP_POSITION:
                         break;
                     case FIRE_NOTES_POSITION: //CALL TO SEND
+                        ((FireNotes)getFragmentAtPosition(FIRE_NOTES_POSITION)).sendVoiceNote();
+                        resetFAB();
                         break;
                     case FRAGMENT_POSITION:
                         break;

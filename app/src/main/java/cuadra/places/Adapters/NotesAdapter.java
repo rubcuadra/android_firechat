@@ -4,16 +4,13 @@ import android.content.Context;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.Query;
 
-import cuadra.places.Fragments.FireNotes;
-import cuadra.places.FriendlyMessage;
+import cuadra.places.Models.FriendlyMessage;
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.R;
 import de.hdodenhof.circleimageview.CircleImageView;

@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
@@ -29,13 +30,20 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
 import cuadra.places.Adapters.NotesAdapter;
 import cuadra.places.CodelabPreferences;
-import cuadra.places.FriendlyMessage;
+import cuadra.places.Models.AudioVoiceNote;
+import cuadra.places.Models.FriendlyMessage;
 
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.R;
@@ -46,7 +54,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 {
     //private static final String ARG_USERNAME = "param1";
     //private static final String ARG_PHOTO_URL = "param2";
-
+    private static final String BUCKET_REFERENCE = "gs://the-places-youll-go.appspot.com";
+    private static final String VOICE_NOTES_PATH = "voice-notes";
     public static final String MESSAGES_CHILD = "messages";
     private static final String F_TAG = "Notes_Fragment";
 
@@ -78,6 +87,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private SharedPreferences mSharedPreferences;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private FirebaseUser mUser;
+    private StorageReference mFireStorageRef;
 
     public FireNotes() {}
 
@@ -97,8 +107,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         super.onCreate(savedInstanceState);
         //if (getArguments() != null){mUsername = getArguments().getString(ARG_USERNAME);mPhotoUrl = getArguments().getString(ARG_PHOTO_URL);}
         mUser = FirebaseAuth.getInstance().getCurrentUser();
+        //Firebase Stuff
         mFirebaseRemoteConfig=FirebaseRemoteConfig.getInstance();
         mFirebaseDatabaseReference=FirebaseDatabase.getInstance().getReference();
+        mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(BUCKET_REFERENCE).child(VOICE_NOTES_PATH);
     }
 
     @Override
@@ -141,6 +153,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 
         //Start Adapter for Firebase Messages
         mFirebaseAdapter = new NotesAdapter(getContext(),this,mFirebaseDatabaseReference.child(MESSAGES_CHILD));
+
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver()
         {
             @Override
@@ -273,6 +286,57 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                         new InputFilter.LengthFilter(friendly_msg_length.intValue())
                 });
         Log.d(F_TAG, "FML is: " + friendly_msg_length);
+    }
+
+    public void sendVoiceNote()
+    {
+        try
+        {
+            InputStream stream = new FileInputStream(new File(mfileName));
+
+            String extension = mfileName.substring( mfileName.lastIndexOf(".")+1 );
+
+            final DatabaseReference newNote = mFirebaseDatabaseReference.child("VOICE-NOTES").push();
+
+            mFireStorageRef = mFireStorageRef.child(newNote.getKey()+"."+extension);
+
+            Log.d(F_TAG,newNote.toString());
+            Log.d(F_TAG,mFireStorageRef.getPath());
+
+
+            UploadTask uploadTask = mFireStorageRef.putStream(stream);
+            uploadTask.addOnFailureListener(new OnFailureListener()
+            {
+                @Override
+                public void onFailure(@NonNull Exception exception)
+                {
+                }
+            }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>()
+            {
+                @Override
+                public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                    // taskSnapshot.getMetadata() contains file metadata such as size, content-type, and download URL.
+
+
+                    newNote.setValue( new AudioVoiceNote(taskSnapshot.getDownloadUrl(),
+                                                            mUser.getUid(),
+                                                            "Test",
+                                                            String.valueOf(taskSnapshot.getTotalByteCount()) ) );
+
+                    Log.d(F_TAG,"URL DEL ARCHIVO SUBIDO: "+ taskSnapshot.getDownloadUrl() );
+                    Log.d(F_TAG,"DATOS DEL FILE "+taskSnapshot.getMetadata().toString());
+                    Log.d(F_TAG,"DATOS DEL FILE "+taskSnapshot.getTotalByteCount());
+
+                }
+            });
+        } catch (FileNotFoundException e)
+        {
+            Log.d(F_TAG,"File not found "+mfileName);
+            mfileName=null;
+            e.printStackTrace();
+        }
+
+
     }
 
     public void OnPopulate()
