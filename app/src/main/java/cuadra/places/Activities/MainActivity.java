@@ -219,7 +219,7 @@ public class MainActivity extends AppCompatActivity implements
         mfab_icons = new Drawable[SECTIONS];
         mfab_icons[MAP_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_menu_compass);
         mfab_icons[FIRE_NOTES_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_menu_add);
-        mfab_icons[FRAGMENT_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_popup_sync);
+        //mfab_icons[FRAGMENT_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_popup_sync);
 
         mCurrentFrag=FIRE_NOTES_POSITION; //FIRE NOTES AS FIRST FRAG
         mSectionsPagerAdapter = new MainAdapter(getSupportFragmentManager());

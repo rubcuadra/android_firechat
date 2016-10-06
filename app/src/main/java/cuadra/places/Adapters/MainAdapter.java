@@ -22,7 +22,7 @@ public class MainAdapter extends FragmentPagerAdapter
     public static final int MAP_POSITION = 0;
     public static final int FIRE_NOTES_POSITION = 1;
     public static final int FRAGMENT_POSITION = 2;
-    public static final int SECTIONS=3;
+    public static final int SECTIONS=2;
 
     public MainAdapter(FragmentManager fm)
     {
