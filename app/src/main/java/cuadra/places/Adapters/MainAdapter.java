@@ -59,7 +59,7 @@ public class MainAdapter extends FragmentPagerAdapter
             case MAP_POSITION:
                 return "Map";
             case FIRE_NOTES_POSITION:
-                return "Notes";
+                return "Discover";
             case FRAGMENT_POSITION:
                 return "Other";
         }
