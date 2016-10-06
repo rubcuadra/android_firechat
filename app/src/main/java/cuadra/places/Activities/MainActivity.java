@@ -383,8 +383,15 @@ public class MainActivity extends AppCompatActivity implements
                         }
                         break;
                     case FIRE_NOTES_POSITION: //CALL TO RECORD
-                        Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
-                        startActivityForResult(intent, RECORD_INTENT);
+                        try
+                        {
+                            Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
+                            startActivityForResult(intent, RECORD_INTENT);
+                        }
+                        catch (Exception e)
+                        {
+                            Toast.makeText(CONTEXT,"Debes tener instalada alguna app para grabar audio",Toast.LENGTH_SHORT).show();
+                        }
                         break;
                     case FRAGMENT_POSITION:
                         break;
