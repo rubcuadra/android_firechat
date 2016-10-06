@@ -69,7 +69,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final int REQUEST_INVITE = 1;
     private static final int RECORD_INTENT = 2;
     private static final int PERMISSIONS_ALL=3;
-    private static final String[] PERMISSIONS = {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO};
+    private static final String[] PERMISSIONS =
+            {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO};
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
