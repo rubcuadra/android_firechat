@@ -3,14 +3,15 @@ package cuadra.places.Fragments;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.Fragment;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.Editable;
@@ -23,15 +24,16 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.auth.api.model.StringList;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.OnPausedListener;
 import com.google.firebase.storage.OnProgressListener;
@@ -53,6 +55,9 @@ import cuadra.places.Models.FriendlyMessage;
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.R;
 
+import static android.R.drawable.ic_media_pause;
+import static android.R.drawable.ic_media_play;
+import static android.R.drawable.stat_sys_download;
 import static cuadra.places.Activities.MainActivity.DEFAULT_MSG_LENGTH_LIMIT;
 
 public class FireNotes extends Fragment implements FirebaseAdapterInterface
@@ -63,11 +68,11 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 
     //VARS
     private String mfileName;
-
+    private Context CONTEXT;
 
     //AUDIO
-    private MediaPlayer mPlayer = null;
-    private boolean play=true;
+    private static MediaPlayer mPlayer = null;
+    //private boolean playingAudio = false;
     private AudioVoiceNote mCurrentVoiceNote;
 
     //INTERACTIONS
@@ -83,6 +88,12 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private Button playButton;
     private Button cancelButton;
 
+    private Drawable playIcon;
+    private Drawable downloadIcon;
+    private Drawable pauseIcon;
+
+    private NotesAdapter.MessageViewHolder playingViewHolder;
+
     //FIREBASE
     private DatabaseReference mFirebaseDatabaseReference;
     private NotesAdapter mFirebaseAdapter;
@@ -91,6 +102,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private FirebaseUser mUser;
     private StorageReference mFireStorageRef;
     private DatabaseReference mNewNote;
+    private FirebaseStorage mStorageInstance;
 
     public FireNotes() {}
 
@@ -113,7 +125,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         //Firebase Stuff
         mFirebaseRemoteConfig=FirebaseRemoteConfig.getInstance();
         mFirebaseDatabaseReference=FirebaseDatabase.getInstance().getReference();
-        mFireStorageRef = FirebaseStorage.getInstance().getReferenceFromUrl(BUCKET_REFERENCE).child(MESSAGES_CHILD);
+        mStorageInstance = FirebaseStorage.getInstance();
+        mFireStorageRef = mStorageInstance.getReferenceFromUrl(BUCKET_REFERENCE).child(MESSAGES_CHILD);
         mNewNote=mFirebaseDatabaseReference.child("VOICE-NOTES");
         mCurrentVoiceNote = new AudioVoiceNote();
         mCurrentVoiceNote.setUser(mUser);
@@ -123,8 +136,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public View onCreateView(LayoutInflater inflater, ViewGroup container,Bundle savedInstanceState)
     {
         View view = inflater.inflate(R.layout.fragment_fire_notes, container, false);
-
-        final Context CONTEXT = view.getContext();
         mProgressBar = (ProgressBar) view.findViewById(R.id.progressBar);
         mMessageRecyclerView = (RecyclerView) view.findViewById(R.id.messageRecyclerView);
         mLinearLayoutManager = new LinearLayoutManager(CONTEXT);
@@ -133,6 +144,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         new_audio_note_layout = (ConstraintLayout) view.findViewById(R.id.audio_constraint_layout);
         playButton = (Button) view.findViewById(R.id.playButton);
         cancelButton = (Button) view.findViewById(R.id.cancelButton);
+
+        playIcon =  ContextCompat.getDrawable(CONTEXT, ic_media_play);
+        downloadIcon = ContextCompat.getDrawable(CONTEXT, stat_sys_download);
+        pauseIcon = ContextCompat.getDrawable(CONTEXT, ic_media_pause);
 
         cancelButton.setOnClickListener(new View.OnClickListener()
         {
@@ -151,9 +166,21 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             @Override
             public void onClick(View view)
             {
-                if (play)   startPlaying();
-                else        stopPlaying();
-                play = !play;
+                if (mPlayer==null) //Podemos darle play sin problema
+                {
+                    playButton.setText("Stop");
+                }
+                else                //Avisarle a los otros que se pausaron
+                {
+                    stopPlaying();
+                    if (playingViewHolder!=null)
+                    {
+                        playingViewHolder.playButton.setImageDrawable(playIcon);
+                        playingViewHolder=null;
+                    }
+                }
+                playingViewHolder=null;
+                startPlaying(mfileName,onFinishNewVoiceNote);
             }
         });
 
@@ -223,18 +250,63 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         return view;
     }
 
-    public void OnElementClick()
+    public void onVoiceNoteDownload(final NotesAdapter.MessageViewHolder view, String fileToDownload)
     {
-        if (mListener != null)
+        StorageReference gsReference = mStorageInstance.getReferenceFromUrl(BUCKET_REFERENCE+"/"+MESSAGES_CHILD+"/"+fileToDownload);
+        try
         {
-            //mListener.resetFAB()
+
+            final File localFile = new File(CONTEXT.getCacheDir()+"/"+fileToDownload);
+            Log.d(F_TAG,"Nota descargada en: "+localFile.getAbsolutePath());
+            gsReference.getFile(localFile).addOnSuccessListener(new OnSuccessListener<FileDownloadTask.TaskSnapshot>()
+            {
+                @Override
+                public void onSuccess(FileDownloadTask.TaskSnapshot taskSnapshot)
+                {
+                    view.playButton.setImageDrawable(playIcon);
+                    view.playButton.setClickable(true);
+                }
+            }).addOnFailureListener(new OnFailureListener()
+            {
+                @Override
+                public void onFailure(@NonNull Exception exception)
+                {
+                    Toast.makeText(CONTEXT,"Ups try again",Toast.LENGTH_SHORT);
+                    view.playButton.setImageDrawable(downloadIcon);
+                    localFile.delete();
+                    view.playButton.setClickable(true);
+                }
+            });
+
         }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void playVoiceNote(NotesAdapter.MessageViewHolder viewHolder, File f)
+    {
+        if (mPlayer!=null) //Si algo esta sonando debemos pararlo
+        {
+            stopPlaying();
+            if (playingViewHolder!=null) //Si no sonaba otra voice_note era la que estamos creando
+                playingViewHolder.playButton.setImageDrawable(playIcon);
+            else
+                playButton.setText("Start");
+        }
+        viewHolder.playButton.setImageDrawable(pauseIcon);
+        startPlaying(f.getAbsolutePath(),onFinishItem);
+        playingViewHolder=viewHolder;
     }
 
     @Override
     public void onAttach(Context context)
     {
         super.onAttach(context);
+        CONTEXT=context;
         if (context instanceof OnFireNotesFragmentInteractionListener)
         {
             mListener = (OnFireNotesFragmentInteractionListener) context;
@@ -293,6 +365,11 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 });
         Log.d(F_TAG, "FML is: " + friendly_msg_length);
     }
+    public void resetFirebaseRefs()
+    {
+        mNewNote=mNewNote.getParent();
+        mFireStorageRef=mFireStorageRef.getParent();
+    }
 
     public void sendVoiceNote()
     {
@@ -301,8 +378,9 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             InputStream stream = new FileInputStream(new File(mfileName));
             String extension = mfileName.substring( mfileName.lastIndexOf(".")+1 );
             mNewNote= mNewNote.push();
-            mFireStorageRef = mFireStorageRef.child(mNewNote.getKey()+"."+extension);
-
+            String newFName = mNewNote.getKey()+"."+extension;
+            mFireStorageRef = mFireStorageRef.child(newFName);
+            mCurrentVoiceNote.setFileName(newFName);
             UploadTask uploadTask = mFireStorageRef.putStream(stream);
             uploadTask.addOnFailureListener(new OnFailureListener()
             {
@@ -310,8 +388,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 public void onFailure(@NonNull Exception exception)
                 {
                     Log.d(F_TAG,"Failed to upload");
-                    mNewNote=mNewNote.getParent();
-                    mFireStorageRef=mFireStorageRef.getParent();
+                    resetFirebaseRefs();
                     deleteFile();
                 }
             }).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>()
@@ -319,12 +396,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 @Override
                 public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
                 {
-                    mCurrentVoiceNote.setDownloadUri(String.valueOf(taskSnapshot.getDownloadUrl()));
+                    mCurrentVoiceNote.setDownloadUrl(String.valueOf(taskSnapshot.getDownloadUrl()));
                     mCurrentVoiceNote.setSize(String.valueOf(taskSnapshot.getMetadata().getSizeBytes()));
                     mNewNote.setValue(mCurrentVoiceNote);
-
-                    mNewNote=mNewNote.getParent();
-                    mFireStorageRef=mFireStorageRef.getParent();
+                    resetFirebaseRefs();
                 }
             }).addOnProgressListener(new OnProgressListener<UploadTask.TaskSnapshot>()
             {
@@ -365,12 +440,16 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     {
         mfileName = newFile;
         Log.d(F_TAG,newFile);
+        openAudioLayout();
+        mCurrentVoiceNote.setDurationFromInt( getFileDuration() );
+    }
+    private int getFileDuration()
+    {
         MediaMetadataRetriever mmr = new MediaMetadataRetriever();
         mmr.setDataSource(mfileName);
         int duration = Integer.parseInt(mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION));
         mmr.release();
-        openAudioLayout();
-        mCurrentVoiceNote.setDurationFromInt( duration);
+        return duration;
     }
     protected void openAudioLayout()
     {
@@ -404,26 +483,17 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         });
         anim.start();
     }
-    private void startPlaying()
+    private void startPlaying(final String fName,MediaPlayer.OnCompletionListener listener)
     {
-        playButton.setText("Stop");
-
         mPlayer = new MediaPlayer();
         try
         {
-            mPlayer.setDataSource(mfileName);
+            mPlayer.setDataSource(fName);
+            Log.d(F_TAG,fName);
             mPlayer.prepare();
             mPlayer.start();
 
-            mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener()
-            {
-                @Override
-                public void onCompletion(MediaPlayer mediaPlayer)
-                {
-                    stopPlaying();
-                    play=true;
-                }
-            });
+            mPlayer.setOnCompletionListener(listener);
 
         } catch (IOException e)
         {
@@ -432,7 +502,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
     private void stopPlaying()
     {
-        playButton.setText("Play");
         mPlayer.release();
         mPlayer = null;
     }
@@ -501,10 +570,9 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                             @Override
                             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
                             {
-                                Uri uploaded_uri = taskSnapshot.getDownloadUrl();
+                                mCurrentVoiceNote.setDownloadUrl(String.valueOf(taskSnapshot.getDownloadUrl()));
                                 mNewNote.setValue(mCurrentVoiceNote);
-                                mNewNote=mNewNote.getParent();
-                                mFireStorageRef=mFireStorageRef.getParent();
+                                resetFirebaseRefs();
                             }
                         }).addOnFailureListener(new OnFailureListener()
                         {
@@ -512,8 +580,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                             public void onFailure(@NonNull Exception exception)
                             {
                                 Log.d(F_TAG,"Failed to upload");
-                                mNewNote=mNewNote.getParent();
-                                mFireStorageRef=mFireStorageRef.getParent();
+                                resetFirebaseRefs();
                                 deleteFile();
                             }
                         });
@@ -525,4 +592,26 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     {
         void resetFAB();
     }
+
+
+    private MediaPlayer.OnCompletionListener onFinishNewVoiceNote = new MediaPlayer.OnCompletionListener()
+    {
+        @Override
+        public void onCompletion(MediaPlayer mediaPlayer)
+        {
+            stopPlaying();
+            playButton.setText("Start");
+        }
+    };
+
+    private MediaPlayer.OnCompletionListener onFinishItem = new MediaPlayer.OnCompletionListener()
+    {
+        @Override
+        public void onCompletion(MediaPlayer mediaPlayer)
+        {
+            stopPlaying();
+            playingViewHolder.playButton.setImageDrawable(playIcon);
+            playingViewHolder=null; //Ya no hay viewholders sonando
+        }
+    };
 }

@@ -26,10 +26,10 @@
         android:layout_weight="0"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:hint="Message"
-        app:layout_constraintLeft_toRightOf="@+id/imageButton"
         app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="8dp"
-        android:layout_marginStart="8dp"/>
+        android:layout_marginStart="8dp"
+        app:layout_constraintLeft_toRightOf="@+id/play_item"/>
 
             <TextView
                 android:id="@+id/messengerTextView"
@@ -45,8 +45,8 @@
     <ImageButton
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:srcCompat="@android:drawable/ic_media_play"
-        android:id="@+id/imageButton"
+        app:srcCompat="@android:drawable/stat_sys_download"
+        android:id="@+id/play_item"
         android:layout_marginStart="8dp"
         app:layout_constraintLeft_toLeftOf="parent"
         android:layout_marginTop="8dp"

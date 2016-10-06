@@ -1,7 +1,5 @@
 package cuadra.places.Models;
 
-import android.net.Uri;
-
 import com.google.firebase.auth.FirebaseUser;
 
 
@@ -11,7 +9,7 @@ import com.google.firebase.auth.FirebaseUser;
 
 public class AudioVoiceNote
 {
-    private String downloadUri;
+    private String downloadUrl;
 
     private String uuid;        //Id del usuario que lo subio
     private String userName;    //Nombre de usuario que lo subio
@@ -22,11 +20,12 @@ public class AudioVoiceNote
     private String description; //caracteres que describan la nota
     private String duration;
     private String since;
+    private String fileName;
 
     public AudioVoiceNote(String downloadUri, String uuid, String title, String size,String userName,String description,
-                          String photoUrl, String duration,String since)
+                          String photoUrl, String duration,String since,String fileName)
     {
-        this.downloadUri = downloadUri;
+        this.downloadUrl = downloadUri;
         this.uuid = uuid;
         this.title = title;
         this.size = size;
@@ -35,6 +34,7 @@ public class AudioVoiceNote
         this.photoUrl=photoUrl;
         this.duration = duration;
         this.since = since;
+        this.fileName=fileName;
 
     }
     public AudioVoiceNote(){}
@@ -46,12 +46,12 @@ public class AudioVoiceNote
         userName=u.getDisplayName();
     }
 
-    public String getDownloadUri() {
-        return downloadUri;
+    public String getDownloadUrl() {
+        return downloadUrl;
     }
 
-    public void setDownloadUri(String downloadUri) {
-        this.downloadUri = downloadUri;
+    public void setDownloadUrl(String downloadUri) {
+        this.downloadUrl = downloadUri;
     }
 
     public String getUuid() {
@@ -120,8 +120,24 @@ public class AudioVoiceNote
         duration+= ":";
         duration+= seconds<10?"0"+seconds:seconds;
     }
-    public String getSizeInKb()
+    public String obtainSizeInKb()
     {
         return size.substring(0,size.length()-3);
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        this.fileName = fileName;
+    }
+
+    public String getSince() {
+        return since;
+    }
+
+    public void setSince(String since) {
+        this.since = since;
     }
 }

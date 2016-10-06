@@ -33,7 +33,7 @@
         app:layout_constraintBottom_toTopOf="@+id/messageEditText"
         android:layout_marginBottom="8dp"/>
 
-    <include layout="@layout/item_audio"
+    <include layout="@layout/item_new_audio"
              android:layout_width="match_parent"
              android:layout_height="1dp"
              app:layout_constraintLeft_toLeftOf="parent"
