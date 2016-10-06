@@ -72,8 +72,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 
     //AUDIO
     private static MediaPlayer mPlayer = null;
-    //private boolean playingAudio = false;
-    private AudioVoiceNote mCurrentVoiceNote;
+    private AudioVoiceNote mCurrentVoiceNote; //Objeto que se subira a Firebase
 
     //INTERACTIONS
     private OnFireNotesFragmentInteractionListener mListener;
@@ -92,7 +91,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private Drawable downloadIcon;
     private Drawable pauseIcon;
 
-    private NotesAdapter.MessageViewHolder playingViewHolder;
+    private NotesAdapter.MessageViewHolder playingViewHolder;   //Item de la lista que esta sonando o null
 
     //FIREBASE
     private DatabaseReference mFirebaseDatabaseReference;
@@ -166,21 +165,14 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             @Override
             public void onClick(View view)
             {
-                if (mPlayer==null) //Podemos darle play sin problema
+                stopPlaying();
+                if (playingViewHolder==null && mPlayer!=null)//Esta sonando y es esta voice, pausarla
+                {}
+                else //Darle Play
                 {
                     playButton.setText("Stop");
+                    startPlaying(mfileName);
                 }
-                else                //Avisarle a los otros que se pausaron
-                {
-                    stopPlaying();
-                    if (playingViewHolder!=null)
-                    {
-                        playingViewHolder.playButton.setImageDrawable(playIcon);
-                        playingViewHolder=null;
-                    }
-                }
-                playingViewHolder=null;
-                startPlaying(mfileName,onFinishNewVoiceNote);
             }
         });
 
@@ -209,7 +201,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(CONTEXT);
-        //Write Message
+        /*
         mMessageEditText = (EditText) view.findViewById(R.id.messageEditText);
         mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
                 .getInt(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
@@ -246,7 +238,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 mMessageEditText.setText("");
             }
         });
-        fetchConfig();
+        */
+        //fetchConfig();
         return view;
     }
 
@@ -289,17 +282,17 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     @Override
     public void playVoiceNote(NotesAdapter.MessageViewHolder viewHolder, File f)
     {
-        if (mPlayer!=null) //Si algo esta sonando debemos pararlo
+        if (viewHolder!= playingViewHolder) //Vamos a darle play
         {
             stopPlaying();
-            if (playingViewHolder!=null) //Si no sonaba otra voice_note era la que estamos creando
-                playingViewHolder.playButton.setImageDrawable(playIcon);
-            else
-                playButton.setText("Start");
+            viewHolder.playButton.setImageDrawable(pauseIcon);
+            startPlaying(f.getAbsolutePath());
+            playingViewHolder=viewHolder;
         }
-        viewHolder.playButton.setImageDrawable(pauseIcon);
-        startPlaying(f.getAbsolutePath(),onFinishItem);
-        playingViewHolder=viewHolder;
+        else  //Lo volvieron a presionar, osea pausar
+        {
+            stopPlaying();
+        }
     }
 
     @Override
@@ -323,48 +316,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mListener = null;
     }
 
-    public void fetchConfig()
-    {
-        long cacheExpiration = 3600; //3600 1 hour in seconds
-
-        if (mFirebaseRemoteConfig.getInfo().getConfigSettings()
-                .isDeveloperModeEnabled())
-        {
-            cacheExpiration = 15;
-        }
-
-        mFirebaseRemoteConfig.fetch(cacheExpiration).addOnSuccessListener(new OnSuccessListener<Void>()
-                {
-                    @Override
-                    public void onSuccess(Void aVoid)
-                    {
-                        // Make the fetched config available via
-                        // FirebaseRemoteConfig get<type> calls.
-                        mFirebaseRemoteConfig.activateFetched();
-                        applyRetrievedLengthLimit();
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener()
-                {
-                    @Override
-                    public void onFailure(@NonNull Exception e)
-                    {
-                        // There has been an error fetching the config
-                        Log.w(F_TAG, "Error fetching config: "+e.getMessage());
-                        applyRetrievedLengthLimit();
-                    }
-                });
-    }
-
-    private void applyRetrievedLengthLimit()
-    {
-        Long friendly_msg_length = mFirebaseRemoteConfig.getLong(CodelabPreferences.FRIENDLY_MSG_LENGTH);
-        mMessageEditText.setFilters( new InputFilter[]
-                {
-                        new InputFilter.LengthFilter(friendly_msg_length.intValue())
-                });
-        Log.d(F_TAG, "FML is: " + friendly_msg_length);
-    }
     public void resetFirebaseRefs()
     {
         mNewNote=mNewNote.getParent();
@@ -483,7 +434,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         });
         anim.start();
     }
-    private void startPlaying(final String fName,MediaPlayer.OnCompletionListener listener)
+    private void startPlaying(final String fName)
     {
         mPlayer = new MediaPlayer();
         try
@@ -493,7 +444,14 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             mPlayer.prepare();
             mPlayer.start();
 
-            mPlayer.setOnCompletionListener(listener);
+            mPlayer.setOnCompletionListener(new MediaPlayer.OnCompletionListener()
+            {
+                @Override
+                public void onCompletion(MediaPlayer mediaPlayer)
+                {
+                    stopPlaying();
+                }
+            });
 
         } catch (IOException e)
         {
@@ -502,8 +460,20 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
     private void stopPlaying()
     {
-        mPlayer.release();
-        mPlayer = null;
+        if (mPlayer!=null)
+        {
+            mPlayer.release();
+            mPlayer = null;
+        }
+        if (playingViewHolder!=null) //Paramos un item
+        {
+            playingViewHolder.playButton.setImageDrawable(playIcon);
+            playingViewHolder=null;
+        }
+        else                        //Paramos la grabacion actual
+        {
+            playButton.setText("Start");
+        }
     }
     private void deleteFile()
     {
@@ -524,11 +494,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public void onPause()
     {
         super.onPause();
-        if (mPlayer != null)
-        {
-            mPlayer.release();
-            mPlayer = null;
-        }
+        stopPlaying();
     }
     @Override
     public void onSaveInstanceState(Bundle outState)
@@ -593,25 +559,48 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         void resetFAB();
     }
 
-
-    private MediaPlayer.OnCompletionListener onFinishNewVoiceNote = new MediaPlayer.OnCompletionListener()
+    /*
+    public void fetchConfig()
     {
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer)
-        {
-            stopPlaying();
-            playButton.setText("Start");
-        }
-    };
+        long cacheExpiration = 3600; //3600 1 hour in seconds
 
-    private MediaPlayer.OnCompletionListener onFinishItem = new MediaPlayer.OnCompletionListener()
-    {
-        @Override
-        public void onCompletion(MediaPlayer mediaPlayer)
+        if (mFirebaseRemoteConfig.getInfo().getConfigSettings()
+                .isDeveloperModeEnabled())
         {
-            stopPlaying();
-            playingViewHolder.playButton.setImageDrawable(playIcon);
-            playingViewHolder=null; //Ya no hay viewholders sonando
+            cacheExpiration = 15;
         }
-    };
+
+        mFirebaseRemoteConfig.fetch(cacheExpiration).addOnSuccessListener(new OnSuccessListener<Void>()
+                {
+                    @Override
+                    public void onSuccess(Void aVoid)
+                    {
+                        // Make the fetched config available via
+                        // FirebaseRemoteConfig get<type> calls.
+                        mFirebaseRemoteConfig.activateFetched();
+                        applyRetrievedLengthLimit();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener()
+                {
+                    @Override
+                    public void onFailure(@NonNull Exception e)
+                    {
+                        // There has been an error fetching the config
+                        Log.w(F_TAG, "Error fetching config: "+e.getMessage());
+                        applyRetrievedLengthLimit();
+                    }
+                });
+    }
+
+    private void applyRetrievedLengthLimit()
+    {
+        Long friendly_msg_length = mFirebaseRemoteConfig.getLong(CodelabPreferences.FRIENDLY_MSG_LENGTH);
+        mMessageEditText.setFilters( new InputFilter[]
+                {
+                        new InputFilter.LengthFilter(friendly_msg_length.intValue())
+                });
+        Log.d(F_TAG, "FML is: " + friendly_msg_length);
+    }
+    */
 }
