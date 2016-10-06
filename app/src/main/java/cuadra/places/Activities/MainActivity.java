@@ -196,10 +196,12 @@ public class MainActivity extends AppCompatActivity implements
 
         switch (item.getItemId())
         {
+            /*
             case R.id.crash_menu:
                 FirebaseCrash.logcat(Log.ERROR, TAG, "crash caused");
                 causeCrash();
                 return true;
+            */
             case R.id.invite_menu:
                 sendInvitation();
                 return true;
