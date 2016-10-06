@@ -36,15 +36,18 @@ dependencies {
     compile 'com.github.wangjiegulu:RapidFloatingActionButton:1.0.3'
     // Firebase - Google
     ext.firebaseLibVersion = "9.4.0"
+    ext.googleLibVersion = "9.4.0"
     compile "com.google.firebase:firebase-database:$firebaseLibVersion"
     compile "com.google.firebase:firebase-auth:$firebaseLibVersion"
     compile "com.google.firebase:firebase-config:$firebaseLibVersion"
     compile "com.google.firebase:firebase-storage:$firebaseLibVersion"
     compile "com.google.firebase:firebase-messaging:$firebaseLibVersion"
     compile "com.google.firebase:firebase-crash:$firebaseLibVersion"
-    compile "com.google.android.gms:play-services-appinvite:$firebaseLibVersion"
-    compile "com.google.android.gms:play-services-ads:$firebaseLibVersion"
-    compile "com.google.android.gms:play-services-auth:$firebaseLibVersion"
+
+    compile "com.google.android.gms:play-services-appinvite:$googleLibVersion"
+    compile "com.google.android.gms:play-services-ads:$googleLibVersion"
+    compile "com.google.android.gms:play-services-auth:$googleLibVersion"
+    compile "com.google.android.gms:play-services-maps:$googleLibVersion"
 
     // Firebase UI
     compile 'com.firebaseui:firebase-ui-database:0.4.0'

@@ -5,6 +5,11 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.util.Log;
 
+import com.google.android.gms.maps.GoogleMapOptions;
+import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.SupportMapFragment;
+
+import cuadra.places.Fragments.CustomMapFragment;
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.Fragments.PlaceholderFragment;
 
@@ -19,7 +24,10 @@ public class MainAdapter extends FragmentPagerAdapter
     public static final int FRAGMENT_POSITION = 2;
     public static final int SECTIONS=3;
 
-    public MainAdapter(FragmentManager fm) {super(fm);}
+    public MainAdapter(FragmentManager fm)
+    {
+        super(fm);
+    }
 
 
     @Override
@@ -28,7 +36,7 @@ public class MainAdapter extends FragmentPagerAdapter
         switch(position)
         {
             case MAP_POSITION:
-                return PlaceholderFragment.newInstance(1);
+                return CustomMapFragment.newInstance();
             case FIRE_NOTES_POSITION: //EN MEDIO
                 return FireNotes.newInstance();
             case FRAGMENT_POSITION:

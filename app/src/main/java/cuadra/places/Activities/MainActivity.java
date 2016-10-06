@@ -46,6 +46,7 @@ import java.util.Map;
 
 import cuadra.places.Adapters.MainAdapter;
 import cuadra.places.CodelabPreferences;
+import cuadra.places.Fragments.CustomMapFragment;
 import cuadra.places.Fragments.FireNotes;
 import cuadra.places.R;
 import android.support.v4.app.Fragment;
