@@ -34,6 +34,8 @@ import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -62,8 +64,7 @@ import static cuadra.places.Adapters.MainAdapter.SECTIONS;
 
 public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFireNotesFragmentInteractionListener,
-        GoogleApiClient.OnConnectionFailedListener
-
+        GoogleApiClient.OnConnectionFailedListener, CustomMapFragment.OnMapFragmentReadyCallback, OnMapReadyCallback
 {
     //CONSTANTS
     private static final String TAG = "MainActivity";
@@ -85,6 +86,7 @@ public class MainActivity extends AppCompatActivity implements
     private Context CONTEXT;
     private Drawable[] mfab_icons;
     private Drawable mSend_icon;
+    private GoogleMap gMap;
 
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
@@ -226,7 +228,6 @@ public class MainActivity extends AppCompatActivity implements
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
         mViewPager.setCurrentItem(mCurrentFrag);
-
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
         {
             @Override
@@ -374,6 +375,10 @@ public class MainActivity extends AppCompatActivity implements
                 switch (mCurrentFrag)
                 {
                     case MAP_POSITION:
+                        if (gMap!=null)
+                        {
+                            Log.d(TAG,"TENEMOS MAPA");
+                        }
                         break;
                     case FIRE_NOTES_POSITION: //CALL TO RECORD
                         Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
@@ -407,7 +412,13 @@ public class MainActivity extends AppCompatActivity implements
         }
     };
 
-
-
+    @Override
+    public void onMapReady(GoogleMap googleMap) {gMap = googleMap;}
+    @Override
+    public void OnMapFragmentReadyCallback(CustomMapFragment mp)
+    {
+        Log.d(TAG,"FRAGMENTO LISTO");
+        mp.getMapAsync(this);
+    }
 }
 

@@ -23,4 +23,29 @@ import cuadra.places.R;
  * Created by Ruben on 10/5/16.
  */
 
-public class CustomMapFragment extends SupportMapFragment {}
+public class CustomMapFragment extends SupportMapFragment
+{
+    private Context CONTEXT;
+    private OnMapFragmentReadyCallback mListener;
+
+    @Override
+    public void onAttach(Activity activity)
+    {
+        super.onAttach(activity);
+        Log.d("MAP","ATTACHASDHB");
+        CONTEXT=activity;
+        if (CONTEXT instanceof OnMapFragmentReadyCallback)
+        {
+            mListener = (OnMapFragmentReadyCallback) CONTEXT;
+            mListener.OnMapFragmentReadyCallback(this);
+        } else
+        {
+            throw new RuntimeException(CONTEXT.toString()+" must implement OnMapFragmentReadyCallback");
+        }
+    }
+
+    public interface OnMapFragmentReadyCallback
+    {
+        void OnMapFragmentReadyCallback(CustomMapFragment mp);
+    }
+}
