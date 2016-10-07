@@ -426,38 +426,38 @@ public class MainActivity extends AppCompatActivity implements
     {
         public void onClick(View v)
         {
-            if (hasPermissions(CONTEXT, RECORD_PERMISSIONS))
+            switch (mCurrentFrag)
             {
-                switch (mCurrentFrag)
-                {
-                    case MAP_POSITION:
-                        updateMapToCurrentLocation();
-                        break;
-                    case FIRE_NOTES_POSITION: //CALL TO RECORD
-                        try
+                case MAP_POSITION:
+                    updateMapToCurrentLocation();
+                    break;
+                case FIRE_NOTES_POSITION: //CALL TO RECORD
+                    try
+                    {
+                        if (mLastLocation!=null)
                         {
-                            if (mLastLocation!=null)
+                            if (hasPermissions(CONTEXT, RECORD_PERMISSIONS))
                             {
                                 Intent intent = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION);
                                 startActivityForResult(intent, RECORD_INTENT);
                             }
                             else
                             {
-                                Toast.makeText(CONTEXT,"Tenemos problemas obteniendo tu location, verifica tu GPS",Toast.LENGTH_SHORT).show();
+                                askPermissions(MainActivity.this,RECORD_PERMISSIONS, PERMISSIONS_RECORD);
                             }
                         }
-                        catch (Exception e)
+                        else
                         {
-                            Toast.makeText(CONTEXT,"Debes tener instalada alguna app para grabar audio",Toast.LENGTH_SHORT).show();
+                            Toast.makeText(CONTEXT,"Tenemos problemas obteniendo tu location, verifica tu GPS",Toast.LENGTH_SHORT).show();
                         }
-                        break;
-                    case FRAGMENT_POSITION:
-                        break;
-                }
-            }
-            else
-            {
-                askPermissions(getParent(),RECORD_PERMISSIONS, PERMISSIONS_RECORD);
+                    }
+                    catch (Exception e)
+                    {
+                        Toast.makeText(CONTEXT,"Debes tener instalada alguna app para grabar audio",Toast.LENGTH_SHORT).show();
+                    }
+                    break;
+                case FRAGMENT_POSITION:
+                    break;
             }
         }
     };

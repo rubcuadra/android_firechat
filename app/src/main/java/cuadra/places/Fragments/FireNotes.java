@@ -290,6 +290,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
 
     @Override
+    public void DrawPin(AudioVoiceNote vn) //Esto lo llama el adapter
+    {}
+
+    @Override
     public void onAttach(Context context)
     {
         super.onAttach(context);
