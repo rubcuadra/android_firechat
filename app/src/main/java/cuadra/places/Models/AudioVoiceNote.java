@@ -22,21 +22,10 @@ public class AudioVoiceNote
     private String since;
     private String fileName;
 
-    public AudioVoiceNote(String downloadUri, String uuid, String title, String size,String userName,String description,
-                          String photoUrl, String duration,String since,String fileName)
-    {
-        this.downloadUrl = downloadUri;
-        this.uuid = uuid;
-        this.title = title;
-        this.size = size;
-        this.userName =userName;
-        this.description=description;
-        this.photoUrl=photoUrl;
-        this.duration = duration;
-        this.since = since;
-        this.fileName=fileName;
+    private double latitude;
+    private double longitude;
 
-    }
+
     public AudioVoiceNote(){}
 
     public void setUser(FirebaseUser u)
@@ -139,5 +128,21 @@ public class AudioVoiceNote
 
     public void setSince(String since) {
         this.since = since;
+    }
+
+    public double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(double latitude) {
+        this.latitude = latitude;
+    }
+
+    public double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(double longitude) {
+        this.longitude = longitude;
     }
 }

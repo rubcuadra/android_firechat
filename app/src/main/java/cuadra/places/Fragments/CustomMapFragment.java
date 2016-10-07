@@ -1,30 +1,13 @@
 package cuadra.places.Fragments;
 
-import android.Manifest;
 import android.app.Activity;
-import android.app.Fragment;
 import android.content.Context;
-import android.content.pm.PackageManager;
-import android.location.Location;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.FragmentManager;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
-
-import cuadra.places.R;
 
 import static cuadra.places.Activities.MainActivity.LOCATION_PERMISSIONS;
 import static cuadra.places.Activities.MainActivity.PERMISSIONS_LOCATION;
@@ -40,7 +23,6 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
     private static final String LOGTAG = "MapFragment";
     private GoogleMap mMap;
     private Context CONTEXT;
-    private Location mLocation;
 
     //INTERACTIONS
     private OnMapFragmentInteraction mListener;
@@ -93,12 +75,6 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
         {
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             mMap.setMyLocationEnabled(true);
-            /*
-                LatLng sydney = new LatLng(19, -99.262761);
-                mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Santa Fe"));
-                mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
-                Log.v(LOGTAG, "Added Santa Fe");
-             */
         }
         else
         {

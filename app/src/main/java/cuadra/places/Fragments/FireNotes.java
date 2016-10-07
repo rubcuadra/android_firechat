@@ -4,6 +4,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -14,9 +15,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.Editable;
-import android.text.InputFilter;
-import android.text.TextWatcher;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -48,17 +46,13 @@ import java.io.InputStream;
 import java.util.List;
 
 import cuadra.places.Adapters.NotesAdapter;
-import cuadra.places.CodelabPreferences;
-import cuadra.places.Models.AudioVoiceNote;
-import cuadra.places.Models.FriendlyMessage;
-
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
+import cuadra.places.Models.AudioVoiceNote;
 import cuadra.places.R;
 
 import static android.R.drawable.ic_media_pause;
 import static android.R.drawable.ic_media_play;
 import static android.R.drawable.stat_sys_download;
-import static cuadra.places.Activities.MainActivity.DEFAULT_MSG_LENGTH_LIMIT;
 
 public class FireNotes extends Fragment implements FirebaseAdapterInterface
 {
@@ -557,6 +551,12 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public interface OnFireNotesFragmentInteractionListener
     {
         void resetFAB();
+    }
+
+    public void setLocation(Location loc)
+    {
+        mCurrentVoiceNote.setLatitude(loc.getLatitude());
+        mCurrentVoiceNote.setLongitude(loc.getLongitude());
     }
 
     /*
