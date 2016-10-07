@@ -95,9 +95,10 @@ public class MainActivity extends AppCompatActivity implements
     private int mCurrentFrag;
     private FloatingActionButton fab;
     private Context CONTEXT;
-    private boolean canChangeFABIcon;
     private Drawable[] mfab_icons;
+    private Drawable mAdd_icon;
     private Drawable mSend_icon;
+    private Drawable mMenu_icon;
     private GoogleMap gMap;
 
     // Firebase instance variables
@@ -116,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements
         mSend_icon = ContextCompat.getDrawable(CONTEXT, R.drawable.ic_send_white_24dp);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(onFABClick);
+
         buildGoogleApiClient();
         setAuth();
         setFirebaseConfigs();
@@ -177,10 +179,10 @@ public class MainActivity extends AppCompatActivity implements
                     FireNotes fn = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
                     fn.setFileName(mFileName);
                     fn.setLocation(mLastLocation);
-                    //CAMBIAR FAB 2.0
-                    fab.setImageDrawable(mSend_icon);
+
+                    mfab_icons[FIRE_NOTES_POSITION] = mSend_icon;
                     fab.setOnClickListener(onNextFABClick);
-                    canChangeFABIcon=false;
+                    changeFABIcon();
                 }
                 else
                 {
@@ -227,15 +229,19 @@ public class MainActivity extends AppCompatActivity implements
                 return super.onOptionsItemSelected(item);
         }
     }
-
+    public void resetFABIcons()
+    {
+        mfab_icons[MAP_POSITION] = mMenu_icon;
+        mfab_icons[FIRE_NOTES_POSITION] = mAdd_icon;
+        //mfab_icons[FRAGMENT_POSITION] = mSync_icon
+    }
     public void setPager()
     {
-        canChangeFABIcon=true;
+        mAdd_icon= ContextCompat.getDrawable(CONTEXT,ic_menu_add);
+        mMenu_icon = ContextCompat.getDrawable(CONTEXT,ic_menu_compass);
+        //mSync_icon = ContextCompat.getDrawable(CONTEXT,ic_popup_sync);
         mfab_icons = new Drawable[SECTIONS];
-        mfab_icons[MAP_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_menu_compass);
-        mfab_icons[FIRE_NOTES_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_menu_add);
-        //mfab_icons[FRAGMENT_POSITION] = ContextCompat.getDrawable(CONTEXT,ic_popup_sync);
-
+        resetFABIcons();
         mCurrentFrag=FIRE_NOTES_POSITION; //FIRE NOTES AS FIRST FRAG
         mSectionsPagerAdapter = new MainAdapter(getSupportFragmentManager());
         mViewPager = (ViewPager) findViewById(R.id.container);
@@ -259,28 +265,26 @@ public class MainActivity extends AppCompatActivity implements
     }
     public void changeFABIcon()
     {
-        if (canChangeFABIcon)
+        ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 360f);
+        anim.setDuration(120);
+        anim.setRepeatCount(1);
+        anim.addListener(new Animator.AnimatorListener()
         {
-            ObjectAnimator anim = ObjectAnimator.ofFloat(fab, "rotation", 0f, 360f);
-            anim.setDuration(120);
-            anim.setRepeatCount(1);
-            anim.addListener(new Animator.AnimatorListener()
+            @Override
+            public void onAnimationStart(Animator animator) {}
+            @Override
+            public void onAnimationEnd(Animator animator) {}
+            @Override
+            public void onAnimationCancel(Animator animator) {}
+            @Override
+            public void onAnimationRepeat(Animator animator)
             {
-                @Override
-                public void onAnimationStart(Animator animator) {}
-                @Override
-                public void onAnimationEnd(Animator animator) {}
-                @Override
-                public void onAnimationCancel(Animator animator) {}
-                @Override
-                public void onAnimationRepeat(Animator animator)
-                {
-                    fab.setImageDrawable(mfab_icons[mCurrentFrag]);
-                }
-            });
-            anim.start();
-        }
+                fab.setImageDrawable(mfab_icons[mCurrentFrag]);
+            }
+        });
+        anim.start();
     }
+
 
     public void setFirebaseConfigs() // Apply config settings and default values.
     {
@@ -332,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements
     public void resetFAB()
     {
         fab.setOnClickListener(onFABClick);
-        canChangeFABIcon=true;
+        resetFABIcons();
         changeFABIcon();
     }
 
