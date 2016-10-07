@@ -290,8 +290,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
 
     @Override
-    public void DrawPin(AudioVoiceNote vn) //Esto lo llama el adapter
-    {}
+    public void drawPin(AudioVoiceNote vn) {if (mListener!=null) mListener.drawPin(vn);}
 
     @Override
     public void onAttach(Context context)
@@ -555,6 +554,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public interface OnFireNotesFragmentInteractionListener
     {
         void resetFAB();
+        void drawPin(AudioVoiceNote avn);
     }
 
     public void setLocation(Location loc)

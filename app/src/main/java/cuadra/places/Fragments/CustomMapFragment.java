@@ -8,6 +8,7 @@ import android.support.annotation.Nullable;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.UiSettings;
 
 import static cuadra.places.Activities.MainActivity.LOCATION_PERMISSIONS;
 import static cuadra.places.Activities.MainActivity.PERMISSIONS_LOCATION;
@@ -75,6 +76,8 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
         {
             mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
             mMap.setMyLocationEnabled(true);
+            mMap.getUiSettings().setMapToolbarEnabled(false);
+            mMap.getUiSettings().setCompassEnabled(false);
         }
         else
         {

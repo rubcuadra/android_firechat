@@ -41,6 +41,7 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -54,6 +55,7 @@ import cuadra.places.Adapters.MainAdapter;
 import cuadra.places.CodelabPreferences;
 import cuadra.places.Fragments.CustomMapFragment;
 import cuadra.places.Fragments.FireNotes;
+import cuadra.places.Models.AudioVoiceNote;
 import cuadra.places.R;
 
 import static android.R.drawable.ic_menu_add;
@@ -341,6 +343,18 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
+    public void drawPin(AudioVoiceNote avn)
+    {
+        if (gMap!=null)
+        {
+            MarkerOptions mo = new MarkerOptions();
+            mo.position(new LatLng(avn.getLatitude(),avn.getLongitude()));
+            mo.title(avn.getuserName());
+            gMap.addMarker(mo);
+        }
+    }
+
+    @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult)
     {
         Log.d(TAG, "onConnectionFailed:" + connectionResult);
@@ -397,7 +411,6 @@ public class MainActivity extends AppCompatActivity implements
     {
         return getSupportFragmentManager().findFragmentByTag("android:switcher:"+R.id.container+":"+index);
     }
-
 
     @Override
     protected void onResume()
