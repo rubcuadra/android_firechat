@@ -116,11 +116,11 @@ public class MainActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_main);
         setSupportActionBar((Toolbar) findViewById(R.id.toolbar));//SetToolbar
         CONTEXT = getApplicationContext();
+        setAuth();
         mSend_icon = ContextCompat.getDrawable(CONTEXT, R.drawable.ic_send_white_24dp);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(onFABClick);
         buildGoogleApiClient();
-        setAuth();
         setFirebaseConfigs();
         //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
         /*
