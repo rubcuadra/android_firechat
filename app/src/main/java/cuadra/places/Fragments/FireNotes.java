@@ -15,8 +15,10 @@ import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.text.InputFilter;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -46,6 +48,7 @@ import java.io.InputStream;
 import java.util.List;
 
 import cuadra.places.Adapters.NotesAdapter;
+import cuadra.places.CodelabPreferences;
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.Models.AudioVoiceNote;
 import cuadra.places.R;
@@ -53,6 +56,8 @@ import cuadra.places.R;
 import static android.R.drawable.ic_media_pause;
 import static android.R.drawable.ic_media_play;
 import static android.R.drawable.stat_sys_download;
+import static android.support.v7.widget.RecyclerView.SCROLL_STATE_IDLE;
+import static cuadra.places.Activities.MainActivity.TITLE_LENGTH_LIMIT;
 
 public class FireNotes extends Fragment implements FirebaseAdapterInterface
 {
@@ -76,7 +81,11 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private RecyclerView mMessageRecyclerView;
     private LinearLayoutManager mLinearLayoutManager;
     private ProgressBar mProgressBar;
-    private EditText mMessageEditText;
+
+    private EditText mNoteTagsEditText;
+    private EditText mNoteTitleEditText;
+
+
     private ConstraintLayout new_audio_note_layout;
     private Button playButton;
     private Button cancelButton;
@@ -103,8 +112,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     {
         FireNotes fragment = new FireNotes();
         Bundle args = new Bundle();
-        //args.putString(ARG_USERNAME, username);
-        //args.putString(ARG_PHOTO_URL, photo);
         fragment.setArguments(args);
         return fragment;
     }
@@ -170,6 +177,25 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             }
         });
 
+        mMessageRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener()
+        {
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState)
+            {
+                super.onScrollStateChanged(recyclerView, newState);
+                if (newState == SCROLL_STATE_IDLE && mListener!=null)
+                    mListener.showFAB();
+                else
+                    mListener.hideFAB();
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy)
+            {
+                super.onScrolled(recyclerView, dx, dy);
+            }
+        });
+
         //Start Adapter for Firebase Messages
         mFirebaseAdapter = new NotesAdapter(getContext(),this,mFirebaseDatabaseReference.child(MESSAGES_CHILD));
 
@@ -195,45 +221,14 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
         mMessageRecyclerView.setAdapter(mFirebaseAdapter);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(CONTEXT);
-        /*
-        mMessageEditText = (EditText) view.findViewById(R.id.messageEditText);
-        mMessageEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
-                .getInt(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT))});
 
-        mMessageEditText.addTextChangedListener(new TextWatcher()
-        {
-            @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+        mNoteTagsEditText = (EditText) view.findViewById(R.id.TagsEditText);
+        mNoteTitleEditText = (EditText) view.findViewById(R.id.noteTitle);
 
-            @Override
-            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2)
-            {
-                if (charSequence.toString().trim().length() > 0)
-                {
-                    mSendButton.setEnabled(true);
-                } else {
-                    mSendButton.setEnabled(false);
-                }
-            }
-            @Override
-            public void afterTextChanged(Editable editable) {}
-        });
+        mNoteTitleEditText.setFilters(new InputFilter[]{new InputFilter.LengthFilter(mSharedPreferences
+                .getInt(CodelabPreferences.TITLE_LENGTH, TITLE_LENGTH_LIMIT))});
 
-        mSendButton = (Button) view.findViewById(R.id.sendButton);
-        mSendButton.setOnClickListener(new View.OnClickListener()
-        {
-            @Override
-            public void onClick(View view)
-            {
-                FriendlyMessage friendlyMessage = new FriendlyMessage(mMessageEditText.getText().toString(),
-                                                                        mUser.getDisplayName(),
-                                                                        mUser.getPhotoUrl().toString());
-                mFirebaseDatabaseReference.child(MESSAGES_CHILD).push().setValue(friendlyMessage);
-                mMessageEditText.setText("");
-            }
-        });
-        */
-        //fetchConfig();
+        fetchConfig();
         return view;
     }
 
@@ -329,6 +324,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             String newFName = mNewNote.getKey()+"."+extension;
             mFireStorageRef = mFireStorageRef.child(newFName);
             mCurrentVoiceNote.setFileName(newFName);
+            mCurrentVoiceNote.setTitle(mNoteTitleEditText.getText().toString());
+            mNoteTitleEditText.setText("");
             UploadTask uploadTask = mFireStorageRef.putStream(stream);
             uploadTask.addOnFailureListener(new OnFailureListener()
             {
@@ -555,6 +552,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     {
         void resetFAB();
         void drawPin(AudioVoiceNote avn);
+        void hideFAB();
+        void showFAB();
     }
 
     public void setLocation(Location loc)
@@ -563,28 +562,35 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mCurrentVoiceNote.setLongitude(loc.getLongitude());
     }
 
-    /*
+    public boolean noteIsValid()
+    {
+        boolean valid;
+        valid = mNoteTitleEditText.getText().toString().trim().length()>0;
+        if (!valid) //Titulo valido
+            mNoteTitleEditText.setError("Titulo invalido");
+        return valid;
+    }
+
     public void fetchConfig()
     {
         long cacheExpiration = 3600; //3600 1 hour in seconds
 
-        if (mFirebaseRemoteConfig.getInfo().getConfigSettings()
-                .isDeveloperModeEnabled())
+        if (mFirebaseRemoteConfig.getInfo().getConfigSettings().isDeveloperModeEnabled())
         {
-            cacheExpiration = 15;
+            cacheExpiration = 10;
         }
 
         mFirebaseRemoteConfig.fetch(cacheExpiration).addOnSuccessListener(new OnSuccessListener<Void>()
-                {
-                    @Override
-                    public void onSuccess(Void aVoid)
-                    {
-                        // Make the fetched config available via
-                        // FirebaseRemoteConfig get<type> calls.
-                        mFirebaseRemoteConfig.activateFetched();
-                        applyRetrievedLengthLimit();
-                    }
-                })
+        {
+            @Override
+            public void onSuccess(Void aVoid)
+            {
+                // Make the fetched config available via
+                // FirebaseRemoteConfig get<type> calls.
+                mFirebaseRemoteConfig.activateFetched();
+                applyRetrievedLengthLimit();
+            }
+        })
                 .addOnFailureListener(new OnFailureListener()
                 {
                     @Override
@@ -596,15 +602,13 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                     }
                 });
     }
-
     private void applyRetrievedLengthLimit()
     {
-        Long friendly_msg_length = mFirebaseRemoteConfig.getLong(CodelabPreferences.FRIENDLY_MSG_LENGTH);
-        mMessageEditText.setFilters( new InputFilter[]
+        Long title_length = mFirebaseRemoteConfig.getLong(CodelabPreferences.TITLE_LENGTH);
+        mNoteTitleEditText.setFilters( new InputFilter[]
                 {
-                        new InputFilter.LengthFilter(friendly_msg_length.intValue())
+                        new InputFilter.LengthFilter(title_length.intValue())
                 });
-        Log.d(F_TAG, "FML is: " + friendly_msg_length);
+        Log.d(F_TAG, "FML is: " + title_length);
     }
-    */
 }

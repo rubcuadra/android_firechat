@@ -50,7 +50,7 @@ public class NotesAdapter extends FirebaseRecyclerAdapter<AudioVoiceNote,NotesAd
 
         final File f = new File(cacheDir+audioVoiceNote.getFileName());
         //Si el file existe poner play, si no existe poner download, de eso depende la funcionalidad del button
-        viewHolder.messageTextView.setText(audioVoiceNote.getuserName());
+        viewHolder.messageTextView.setText(audioVoiceNote.getTitle());
         viewHolder.messengerTextView.setText(audioVoiceNote.getDuration() + "     " +audioVoiceNote.obtainSizeInKb()+"kb");
         if (f.exists())
             viewHolder.playButton.setImageDrawable(playIcon);

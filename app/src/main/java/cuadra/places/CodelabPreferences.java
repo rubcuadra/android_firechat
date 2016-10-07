@@ -15,8 +15,7 @@
  */
 package cuadra.places;
 
-public class CodelabPreferences {
-
-    public static final String FRIENDLY_MSG_LENGTH = "friendly_msg_length";
-
+public class CodelabPreferences
+{
+    public static final String TITLE_LENGTH = "title_length";
 }

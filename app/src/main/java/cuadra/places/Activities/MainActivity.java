@@ -85,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements
             {Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION};
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
-    public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
+    public static final int TITLE_LENGTH_LIMIT = 20;
 
     //Vars
     private MainAdapter mSectionsPagerAdapter;
@@ -213,12 +213,6 @@ public class MainActivity extends AppCompatActivity implements
 
         switch (item.getItemId())
         {
-            /*
-            case R.id.crash_menu:
-                FirebaseCrash.logcat(Log.ERROR, TAG, "crash caused");
-                causeCrash();
-                return true;
-            */
             case R.id.invite_menu:
                 sendInvitation();
                 return true;
@@ -296,7 +290,7 @@ public class MainActivity extends AppCompatActivity implements
                 .setDeveloperModeEnabled(true)
                 .build();
         Map<String, Object> defaultConfigMap = new HashMap<>();
-        defaultConfigMap.put(CodelabPreferences.FRIENDLY_MSG_LENGTH, DEFAULT_MSG_LENGTH_LIMIT);
+        defaultConfigMap.put(CodelabPreferences.TITLE_LENGTH, TITLE_LENGTH_LIMIT);
         mFirebaseRemoteConfig.setConfigSettings(firebaseRemoteConfigSettings);
         mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
     }
@@ -349,10 +343,16 @@ public class MainActivity extends AppCompatActivity implements
         {
             MarkerOptions mo = new MarkerOptions();
             mo.position(new LatLng(avn.getLatitude(),avn.getLongitude()));
-            mo.title(avn.getuserName());
+            mo.title(avn.getTitle());
             gMap.addMarker(mo);
         }
     }
+
+    @Override
+    public void hideFAB() {fab.hide();}
+
+    @Override
+    public void showFAB() {fab.show();}
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult)
@@ -489,9 +489,12 @@ public class MainActivity extends AppCompatActivity implements
                         break;
                     case FIRE_NOTES_POSITION: //CALL TO SEND
                         FireNotes fn = ((FireNotes)getFragmentAtPosition(FIRE_NOTES_POSITION));
-                        fn.sendVoiceNote();
-                        fn.closeAudioLayout();
-                        resetFAB();
+                        if (fn.noteIsValid())
+                        {
+                            fn.sendVoiceNote();
+                            fn.closeAudioLayout();
+                            resetFAB();
+                        }
                         break;
                     case FRAGMENT_POSITION:
                         break;

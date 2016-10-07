@@ -47,10 +47,11 @@
         android:layout_height="wrap_content"
         android:inputType="textPersonName"
         android:ems="10"
-        android:id="@+id/editText"
+        android:id="@+id/TagsEditText"
         app:layout_constraintBottom_toBottomOf="@+id/cancelButton"
         app:layout_constraintLeft_toLeftOf="@+id/noteTitle"
         app:layout_constraintTop_toTopOf="@+id/cancelButton"
         app:layout_constraintRight_toRightOf="@+id/noteTitle"
+        android:enabled="false"
         android:hint="#Divertido #..."/>
 </android.support.constraint.ConstraintLayout>
