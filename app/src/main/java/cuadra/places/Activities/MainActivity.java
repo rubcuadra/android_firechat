@@ -4,15 +4,18 @@ import android.Manifest;
 
 import android.animation.Animator;
 import android.animation.ObjectAnimator;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TabLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ActivityCompat;
@@ -34,12 +37,15 @@ import com.google.android.gms.appinvite.AppInviteInvitation;
 import com.google.android.gms.auth.api.Auth;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationListener;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.crash.FirebaseCrash;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 
@@ -55,7 +61,6 @@ import android.support.v4.app.Fragment;
 
 import static android.R.drawable.ic_menu_add;
 import static android.R.drawable.ic_menu_compass;
-import static android.R.drawable.ic_popup_sync;
 
 import static cuadra.places.Adapters.MainAdapter.FIRE_NOTES_POSITION;
 import static cuadra.places.Adapters.MainAdapter.FRAGMENT_POSITION;
@@ -64,15 +69,22 @@ import static cuadra.places.Adapters.MainAdapter.SECTIONS;
 
 public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFireNotesFragmentInteractionListener,
-        GoogleApiClient.OnConnectionFailedListener, CustomMapFragment.OnMapFragmentReadyCallback, OnMapReadyCallback
+        GoogleApiClient.OnConnectionFailedListener,
+        GoogleApiClient.ConnectionCallbacks,
+        LocationListener,
+        CustomMapFragment.OnMapFragmentInteraction
 {
     //CONSTANTS
     private static final String TAG = "MainActivity";
     private static final int REQUEST_INVITE = 1;
     private static final int RECORD_INTENT = 2;
-    private static final int PERMISSIONS_ALL=3;
-    private static final String[] PERMISSIONS =
+    private static final int PERMISSIONS_RECORD =3;
+    public static final int PERMISSIONS_LOCATION =4;
+
+    public static final String[] RECORD_PERMISSIONS =
             {Manifest.permission.WRITE_EXTERNAL_STORAGE,Manifest.permission.RECORD_AUDIO};
+    public static final String[] LOCATION_PERMISSIONS =
+            {Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION};
     public static final String ANONYMOUS = "anonymous";
     private static final String MESSAGE_SENT_EVENT = "message_sent";
     public static final int DEFAULT_MSG_LENGTH_LIMIT = 10;
@@ -81,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements
     private MainAdapter mSectionsPagerAdapter;
     private ViewPager mViewPager;
     private GoogleApiClient mGoogleApiClient;
+    private Location mLastLocation;
+    private LocationRequest mLocationRequest;
+
     private int mCurrentFrag;
     private FloatingActionButton fab;
     private Context CONTEXT;
@@ -104,7 +119,7 @@ public class MainActivity extends AppCompatActivity implements
         mSend_icon = ContextCompat.getDrawable(CONTEXT, R.drawable.ic_send_white_24dp);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(onFABClick);
-        setGoogleAPI();
+        buildGoogleApiClient();
         setAuth();
         setFirebaseConfigs();
         //Environment.getExternalStorageDirectory().getAbsolutePath()+"/audiorecordtest.3gp";
@@ -278,14 +293,19 @@ public class MainActivity extends AppCompatActivity implements
         mFirebaseRemoteConfig.setConfigSettings(firebaseRemoteConfigSettings);
         mFirebaseRemoteConfig.setDefaults(defaultConfigMap);
     }
-    public void setGoogleAPI()
+
+    protected synchronized void buildGoogleApiClient()
     {
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .enableAutoManage(this,this)
                 .addApi(Auth.GOOGLE_SIGN_IN_API)
                 .addApi(AppInvite.API)
+                .addApi(LocationServices.API)
+                .addOnConnectionFailedListener(this)
+                .addConnectionCallbacks(this)
                 .build();
     }
+
     public void setAuth()
     {
         //mUsername = ANONYMOUS;
@@ -335,9 +355,9 @@ public class MainActivity extends AppCompatActivity implements
         }
         return true;
     }
-    public void askPermissions()
+    public static void askPermissions(Activity act,String[] PERMISSIONS,int code)
     {
-        ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSIONS_ALL);
+        ActivityCompat.requestPermissions(act,PERMISSIONS,code);
     }
 
     @Override
@@ -345,7 +365,11 @@ public class MainActivity extends AppCompatActivity implements
     {
         switch (requestCode)
         {
-            case PERMISSIONS_ALL:
+            case PERMISSIONS_RECORD:
+                for (int i = 0; i<permissions.length;++i)
+                    Log.d(TAG,permissions[i] + " "+ String.valueOf(grantResults[i]) );
+                break;
+            case PERMISSIONS_LOCATION:
                 for (int i = 0; i<permissions.length;++i)
                     Log.d(TAG,permissions[i] + " "+ String.valueOf(grantResults[i]) );
                 break;
@@ -367,20 +391,45 @@ public class MainActivity extends AppCompatActivity implements
     {
         return getSupportFragmentManager().findFragmentByTag("android:switcher:"+R.id.container+":"+index);
     }
+
+
+    @Override
+    protected void onResume()
+    {
+        super.onResume();
+        if (mGoogleApiClient == null)
+            buildGoogleApiClient();
+
+    }
+    protected void onStart()
+    {
+        super.onStart();
+        // Connect the client.
+        mGoogleApiClient.connect();
+    }
+    protected void onStop()
+    {
+        // Disconnecting the client invalidates it.
+        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+        // only stop if it's connected, otherwise we crash
+        if (mGoogleApiClient != null)
+        {
+            mGoogleApiClient.disconnect();
+        }
+        super.onStop();
+    }
+
     // Create an anonymous implementation of OnClickListener
     private View.OnClickListener onFABClick = new View.OnClickListener()
     {
         public void onClick(View v)
         {
-            if (hasPermissions(CONTEXT,PERMISSIONS))
+            if (hasPermissions(CONTEXT, RECORD_PERMISSIONS))
             {
                 switch (mCurrentFrag)
                 {
                     case MAP_POSITION:
-                        if (gMap!=null)
-                        {
-                            Log.d(TAG,"TENEMOS MAPA");
-                        }
+                        updateMapToCurrentLocation();
                         break;
                     case FIRE_NOTES_POSITION: //CALL TO RECORD
                         try
@@ -397,7 +446,10 @@ public class MainActivity extends AppCompatActivity implements
                         break;
                 }
             }
-            else {askPermissions();}
+            else
+            {
+                askPermissions(getParent(),RECORD_PERMISSIONS, PERMISSIONS_RECORD);
+            }
         }
     };
 
@@ -421,13 +473,41 @@ public class MainActivity extends AppCompatActivity implements
         }
     };
 
-    @Override
-    public void onMapReady(GoogleMap googleMap) {gMap = googleMap;}
-    @Override
-    public void OnMapFragmentReadyCallback(CustomMapFragment mp)
+    public void updateMapToCurrentLocation()
     {
-        Log.d(TAG,"FRAGMENTO LISTO");
-        mp.getMapAsync(this);
+        if (gMap!=null && mLastLocation!=null)
+            gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),16));
+        else
+            Log.d(TAG,"gMAP or lastLocation are null");
+    }
+    @Override
+    public void mapReady(GoogleMap gmap)
+    {
+        this.gMap=gmap;
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle)
+    {
+        Log.d(TAG,"onConnected");
+
+        mLocationRequest = new LocationRequest();
+        mLocationRequest.setInterval(1000);
+        mLocationRequest.setFastestInterval(1000);
+        mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
+
+        //mLocationRequest.setSmallestDisplacement(0.1F);
+        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient, mLocationRequest, this);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {}
+
+    @Override
+    public void onLocationChanged(Location location)
+    {
+        mLastLocation = location;
+        updateMapToCurrentLocation();
     }
 }
 
