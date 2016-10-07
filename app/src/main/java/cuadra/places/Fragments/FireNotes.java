@@ -469,7 +469,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         }
         else                        //Paramos la grabacion actual
         {
-            playButton.setText("Start");
+            playButton.setText("Play");
         }
     }
     private void deleteFile()
