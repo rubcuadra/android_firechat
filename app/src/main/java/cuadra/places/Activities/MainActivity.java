@@ -119,7 +119,6 @@ public class MainActivity extends AppCompatActivity implements
         mSend_icon = ContextCompat.getDrawable(CONTEXT, R.drawable.ic_send_white_24dp);
         fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(onFABClick);
-
         buildGoogleApiClient();
         setAuth();
         setFirebaseConfigs();
@@ -297,14 +296,23 @@ public class MainActivity extends AppCompatActivity implements
 
     protected synchronized void buildGoogleApiClient()
     {
-        mGoogleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this,this)
-                .addApi(Auth.GOOGLE_SIGN_IN_API)
-                .addApi(AppInvite.API)
-                .addApi(LocationServices.API)
-                .addOnConnectionFailedListener(this)
-                .addConnectionCallbacks(this)
-                .build();
+        if (hasPermissions(this,LOCATION_PERMISSIONS))
+        {
+            mGoogleApiClient = new GoogleApiClient.Builder(this)
+                    .enableAutoManage(this, this)
+                    .addApi(Auth.GOOGLE_SIGN_IN_API)
+                    .addApi(AppInvite.API)
+                    .addApi(LocationServices.API)
+                    .addOnConnectionFailedListener(this)
+                    .addConnectionCallbacks(this)
+                    .build();
+        }
+        else
+        {
+            askPermissions(this, LOCATION_PERMISSIONS, PERMISSIONS_LOCATION);
+            Toast.makeText(this, "You must give location permissions in order to use this app", Toast.LENGTH_LONG).show();
+            finish();
+        }
     }
 
     public void setAuth()
