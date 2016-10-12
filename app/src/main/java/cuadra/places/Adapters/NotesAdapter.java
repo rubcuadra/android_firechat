@@ -81,7 +81,8 @@ public class NotesAdapter extends FirebaseRecyclerAdapter<AudioVoiceNote,NotesAd
         {
             Glide.with(CONTEXT).load(audioVoiceNote.getPhotoUrl()).into(viewHolder.messengerImageView);
         }
-        FirebaseAdapterListener.drawPin(audioVoiceNote);
+        //
+        // FirebaseAdapterListener.drawPin(audioVoiceNote);
     }
 
     public static class MessageViewHolder extends RecyclerView.ViewHolder

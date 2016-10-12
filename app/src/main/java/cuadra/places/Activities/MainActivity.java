@@ -350,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements
         if (gMap!=null)
         {
             MarkerOptions mo = new MarkerOptions();
-            mo.position(new LatLng(avn.getLatitude(),avn.getLongitude()));
+            //mo.position(new LatLng(avn.getLatitude(),avn.getLongitude()));
             mo.title(avn.getTitle());
             gMap.addMarker(mo);
         }
@@ -543,8 +543,17 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onLocationChanged(Location location)
     {
-        mLastLocation = location;
-        updateMapToCurrentLocation();
+        if (mLastLocation==null)
+        {
+            mLastLocation=location;
+            updateMapToCurrentLocation();
+            FireNotes fn = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
+            fn.startAdapter(location);
+        }
+        else
+        {
+            mLastLocation = location;
+        }
     }
 }
 

@@ -28,10 +28,13 @@ import android.widget.Toast;
 
 import com.firebase.geofire.GeoFire;
 import com.firebase.geofire.GeoLocation;
+import com.firebase.geofire.GeoQuery;
+import com.firebase.geofire.GeoQueryEventListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
@@ -70,6 +73,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     //VARS
     private String mfileName;
     private Context CONTEXT;
+    private GeoLocation mLocation;
 
     //AUDIO
     private static MediaPlayer mPlayer = null;
@@ -200,30 +204,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             }
         });
 
-        //Start Adapter for Firebase Messages
-        mFirebaseAdapter = new NotesAdapter(getContext(),this,mFirebaseDatabaseReference.child(MESSAGES_CHILD));
-
-        mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver()
-        {
-            @Override
-            public void onItemRangeInserted(int positionStart, int itemCount)
-            {
-                super.onItemRangeInserted(positionStart, itemCount);
-                int audioVoiceNotes = mFirebaseAdapter.getItemCount();
-                int lastVisiblePosition = mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
-                // If the recycler view is initially being loaded or the
-                // user is at the bottom of the list, scroll to the bottom
-                // of the list to show the newly added message.
-                if (lastVisiblePosition == -1 ||
-                        (positionStart >= (audioVoiceNotes - 1) &&
-                                lastVisiblePosition == (positionStart - 1)))
-                {
-                    mMessageRecyclerView.scrollToPosition(positionStart);
-                }
-            }
-        });
-        mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
-        mMessageRecyclerView.setAdapter(mFirebaseAdapter);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(CONTEXT);
 
         mNoteTagsEditText = (EditText) view.findViewById(R.id.TagsEditText);
@@ -289,7 +269,11 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
 
     @Override
-    public void drawPin(AudioVoiceNote vn) {if (mListener!=null) mListener.drawPin(vn);}
+    public void drawPin(AudioVoiceNote vn)
+    {
+        if (mListener!=null)
+            mListener.drawPin(vn);
+    }
 
     @Override
     public void onAttach(Context context)
@@ -322,6 +306,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     {
         try
         {
+            //Existe el caso en el que la location es null??
             InputStream stream = new FileInputStream(new File(mfileName));
             String extension = mfileName.substring( mfileName.lastIndexOf(".")+1 );
             mNewNote= mNewNote.push();
@@ -348,7 +333,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 {
                     mCurrentVoiceNote.setDownloadUrl(String.valueOf(taskSnapshot.getDownloadUrl()));
                     mCurrentVoiceNote.setSize(String.valueOf(taskSnapshot.getMetadata().getSizeBytes()));
-                    //mGeoFire.setLocation(mNewNote.getKey(),new GeoLocation(mCurrentVoiceNote.getLatitude(),mCurrentVoiceNote.getLongitude()));
+                    mGeoFire.setLocation(mNewNote.getKey(),mLocation);
                     //Si falla en subir la mGeoFire que borre el registro del storage y ya no sube la mNewNote
                     mNewNote.setValue(mCurrentVoiceNote);
                     resetFirebaseRefs();
@@ -538,7 +523,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
                             {
                                 mCurrentVoiceNote.setDownloadUrl(String.valueOf(taskSnapshot.getDownloadUrl()));
-                                //mGeoFire.setLocation(mNewNote.getKey(),new GeoLocation(mCurrentVoiceNote.getLatitude(),mCurrentVoiceNote.getLongitude()));
+                                mGeoFire.setLocation(mNewNote.getKey(),mLocation);
                                 //Igual si falla en subir que borre el storage
                                 mNewNote.setValue(mCurrentVoiceNote);
                                 resetFirebaseRefs();
@@ -567,8 +552,64 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 
     public void setLocation(Location loc)
     {
-        mCurrentVoiceNote.setLatitude(loc.getLatitude());
-        mCurrentVoiceNote.setLongitude(loc.getLongitude());
+        mLocation = new GeoLocation(loc.getLatitude(),loc.getLongitude());
+    }
+    public void startAdapter(Location loc)
+    {
+        Log.d(F_TAG,"Starting with location"+loc.toString());
+        //Start Adapter for Firebase Messages
+        GeoQuery mq = mGeoFire.queryAtLocation(new GeoLocation(loc.getLatitude(), loc.getLongitude()),60);
+        mq.addGeoQueryEventListener(new GeoQueryEventListener()
+        {
+            @Override
+            public void onKeyEntered(String key, GeoLocation location) {
+                System.out.println(String.format("Key %s entered the search area at [%f,%f]", key, location.latitude, location.longitude));
+            }
+
+            @Override
+            public void onKeyExited(String key) {
+                System.out.println(String.format("Key %s is no longer in the search area", key));
+            }
+
+            @Override
+            public void onKeyMoved(String key, GeoLocation location) {
+                System.out.println(String.format("Key %s moved within the search area to [%f,%f]", key, location.latitude, location.longitude));
+            }
+
+            @Override
+            public void onGeoQueryReady() {
+                System.out.println("All initial data has been loaded and events have been fired!");
+            }
+
+            @Override
+            public void onGeoQueryError(DatabaseError error) {
+                System.err.println("There was an error with this query: " + error);
+            }
+        });
+
+        mFirebaseAdapter = new NotesAdapter(getContext(),this,  mFirebaseDatabaseReference.child(MESSAGES_CHILD));
+
+        mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver()
+        {
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount)
+            {
+                super.onItemRangeInserted(positionStart, itemCount);
+                int audioVoiceNotes = mFirebaseAdapter.getItemCount();
+                int lastVisiblePosition = mLinearLayoutManager.findLastCompletelyVisibleItemPosition();
+                // If the recycler view is initially being loaded or the
+                // user is at the bottom of the list, scroll to the bottom
+                // of the list to show the newly added message.
+                if (lastVisiblePosition == -1 ||
+                        (positionStart >= (audioVoiceNotes - 1) &&
+                                lastVisiblePosition == (positionStart - 1)))
+                {
+                    mMessageRecyclerView.scrollToPosition(positionStart);
+                }
+            }
+        });
+        mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
+        mMessageRecyclerView.setAdapter(mFirebaseAdapter);
     }
 
     public boolean noteIsValid()
