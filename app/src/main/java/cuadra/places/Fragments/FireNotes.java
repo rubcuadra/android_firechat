@@ -73,6 +73,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private String mfileName;
     private Context CONTEXT;
     private GeoLocation mLocation;
+    private VoiceNotesAdapter mAdapter;
 
     //AUDIO
     private static MediaPlayer mPlayer = null;
@@ -89,12 +90,9 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 
     private EditText mNoteTagsEditText;
     private EditText mNoteTitleEditText;
-
-
     private ConstraintLayout new_audio_note_layout;
     private Button playButton;
     private Button cancelButton;
-
     private Drawable playIcon;
     private Drawable downloadIcon;
     private Drawable pauseIcon;
@@ -572,12 +570,12 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             }
         });
         */
-        VoiceNotesAdapter mVAdapter = new VoiceNotesAdapter(CONTEXT,this,
+        mAdapter= new VoiceNotesAdapter(CONTEXT,this,
                                                             mGeoFire.queryAtLocation(new GeoLocation(loc.getLatitude(), loc.getLongitude()),IN_RADIUS_DISTANCE),
                                                             mFirebaseDatabaseReference.child(MESSAGES_CHILD));
 
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
-        mMessageRecyclerView.setAdapter(mVAdapter);
+        mMessageRecyclerView.setAdapter(mAdapter);
     }
 
     public boolean noteIsValid()

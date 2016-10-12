@@ -103,6 +103,8 @@ public class MainActivity extends AppCompatActivity implements
     private Drawable mMenu_icon;
     private GoogleMap gMap;
 
+    private FireNotes mNotesFragment;
+
     // Firebase instance variables
     private FirebaseAuth mFirebaseAuth;
     private FirebaseUser mFirebaseUser;
@@ -257,6 +259,7 @@ public class MainActivity extends AppCompatActivity implements
                 changeFABIcon();
             }
         });
+        mNotesFragment = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
     }
     public void changeFABIcon()
     {
@@ -543,17 +546,21 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onLocationChanged(Location location)
     {
+        if (mNotesFragment==null)
+            mNotesFragment = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
+
         if (mLastLocation==null)
         {
             mLastLocation=location;
             updateMapToCurrentLocation();
-            FireNotes fn = (FireNotes) getFragmentAtPosition(FIRE_NOTES_POSITION);
-            fn.startAdapter(location);
+            mNotesFragment.startAdapter(mLastLocation);
         }
         else
         {
             mLastLocation = location;
+            mNotesFragment.setLocation(mLastLocation);
         }
+
     }
 }
 
