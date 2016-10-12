@@ -1,6 +1,9 @@
 package cuadra.places.Models;
 
+import android.util.Log;
+
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
 
 
 /**
@@ -23,6 +26,7 @@ public class AudioVoiceNote
     private String fileName;
 
     public AudioVoiceNote(){}
+
 
     public void setUser(FirebaseUser u)
     {
@@ -124,5 +128,20 @@ public class AudioVoiceNote
 
     public void setSince(String since) {
         this.since = since;
+    }
+
+    public void debugPrint()
+    {
+
+        System.out.println(downloadUrl);
+        System.out.println(uuid);
+        System.out.println(userName);
+        System.out.println(photoUrl);
+        System.out.println(title);
+        System.out.println(size);
+        System.out.println(description);
+        System.out.println(since);
+        System.out.println(fileName);
+
     }
 }

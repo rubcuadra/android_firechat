@@ -50,7 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import cuadra.places.Adapters.NotesAdapter;
+import cuadra.places.Adapters.VoiceNotesAdapter;
 import cuadra.places.CodelabPreferences;
 import cuadra.places.Interfaces.FirebaseAdapterInterface;
 import cuadra.places.Models.AudioVoiceNote;
@@ -67,6 +67,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private static final String BUCKET_REFERENCE = "gs://the-places-youll-go.appspot.com";
     public static final String MESSAGES_CHILD = "VOICE-NOTES";
     private static final String F_TAG = "Notes_Fragment";
+    private static final int IN_RADIUS_DISTANCE=2;
 
     //VARS
     private String mfileName;
@@ -98,11 +99,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private Drawable downloadIcon;
     private Drawable pauseIcon;
 
-    private NotesAdapter.MessageViewHolder playingViewHolder;   //Item de la lista que esta sonando o null
+    private VoiceNotesAdapter.NoteViewHolder playingViewHolder;   //Item de la lista que esta sonando o null
 
     //FIREBASE
     private DatabaseReference mFirebaseDatabaseReference;
-    private NotesAdapter mFirebaseAdapter;
     private SharedPreferences mSharedPreferences;
     private FirebaseRemoteConfig mFirebaseRemoteConfig;
     private FirebaseUser mUser;
@@ -214,7 +214,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         return view;
     }
 
-    public void onVoiceNoteDownload(final NotesAdapter.MessageViewHolder view, String fileToDownload)
+    @Override
+    public void onVoiceNoteDownload(final VoiceNotesAdapter.NoteViewHolder view, String fileToDownload)
     {
         StorageReference gsReference = mStorageInstance.getReferenceFromUrl(BUCKET_REFERENCE+"/"+MESSAGES_CHILD+"/"+fileToDownload);
         try
@@ -247,11 +248,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         {
             e.printStackTrace();
         }
-
     }
 
     @Override
-    public void playVoiceNote(NotesAdapter.MessageViewHolder viewHolder, File f)
+    public void playVoiceNote(VoiceNotesAdapter.NoteViewHolder viewHolder, File f)
     {
         if (viewHolder!= playingViewHolder) //Vamos a darle play
         {
@@ -267,11 +267,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
 
     @Override
-    public void drawPin(AudioVoiceNote vn)
-    {
-        if (mListener!=null)
-            mListener.drawPin(vn);
-    }
+    public void drawPin(String title, Location l) {}
 
     @Override
     public void onAttach(Context context)
@@ -554,9 +550,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     }
     public void startAdapter(Location loc)
     {
-        //Start Adapter for Firebase Messages
+        /*
         mFirebaseAdapter = new NotesAdapter(getContext(),this,  mFirebaseDatabaseReference.child(MESSAGES_CHILD));
-
         mFirebaseAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver()
         {
             @Override
@@ -576,8 +571,13 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 }
             }
         });
+        */
+        VoiceNotesAdapter mVAdapter = new VoiceNotesAdapter(CONTEXT,this,
+                                                            mGeoFire.queryAtLocation(new GeoLocation(loc.getLatitude(), loc.getLongitude()),IN_RADIUS_DISTANCE),
+                                                            mFirebaseDatabaseReference.child(MESSAGES_CHILD));
+
         mMessageRecyclerView.setLayoutManager(mLinearLayoutManager);
-        mMessageRecyclerView.setAdapter(mFirebaseAdapter);
+        mMessageRecyclerView.setAdapter(mVAdapter);
     }
 
     public boolean noteIsValid()
