@@ -50,6 +50,7 @@ dependencies {
     compile "com.google.android.gms:play-services-maps:$googleLibVersion"
     compile "com.google.android.gms:play-services-location:$googleLibVersion"
 
+    compile 'com.firebase:geofire-android:2.1.0'
     // Firebase UI
     compile 'com.firebaseui:firebase-ui-database:0.4.0'
     // Testing dependencies

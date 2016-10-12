@@ -26,6 +26,8 @@ import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.auth.FirebaseAuth;
@@ -105,6 +107,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     private StorageReference mFireStorageRef;
     private DatabaseReference mNewNote;
     private FirebaseStorage mStorageInstance;
+    private GeoFire mGeoFire;
 
     public FireNotes() {}
 
@@ -127,9 +130,10 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mFirebaseDatabaseReference=FirebaseDatabase.getInstance().getReference();
         mStorageInstance = FirebaseStorage.getInstance();
         mFireStorageRef = mStorageInstance.getReferenceFromUrl(BUCKET_REFERENCE).child(MESSAGES_CHILD);
-        mNewNote=mFirebaseDatabaseReference.child("VOICE-NOTES");
+        mNewNote=mFirebaseDatabaseReference.child(MESSAGES_CHILD);
         mCurrentVoiceNote = new AudioVoiceNote();
         mCurrentVoiceNote.setUser(mUser);
+        mGeoFire = new GeoFire(mFirebaseDatabaseReference.child("GEOFIRE"));
     }
 
     @Override
@@ -326,6 +330,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             mCurrentVoiceNote.setFileName(newFName);
             mCurrentVoiceNote.setTitle(mNoteTitleEditText.getText().toString());
             mNoteTitleEditText.setText("");
+
             UploadTask uploadTask = mFireStorageRef.putStream(stream);
             uploadTask.addOnFailureListener(new OnFailureListener()
             {
@@ -343,6 +348,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                 {
                     mCurrentVoiceNote.setDownloadUrl(String.valueOf(taskSnapshot.getDownloadUrl()));
                     mCurrentVoiceNote.setSize(String.valueOf(taskSnapshot.getMetadata().getSizeBytes()));
+                    //mGeoFire.setLocation(mNewNote.getKey(),new GeoLocation(mCurrentVoiceNote.getLatitude(),mCurrentVoiceNote.getLongitude()));
+                    //Si falla en subir la mGeoFire que borre el registro del storage y ya no sube la mNewNote
                     mNewNote.setValue(mCurrentVoiceNote);
                     resetFirebaseRefs();
                 }
@@ -531,6 +538,8 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
                             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot)
                             {
                                 mCurrentVoiceNote.setDownloadUrl(String.valueOf(taskSnapshot.getDownloadUrl()));
+                                //mGeoFire.setLocation(mNewNote.getKey(),new GeoLocation(mCurrentVoiceNote.getLatitude(),mCurrentVoiceNote.getLongitude()));
+                                //Igual si falla en subir que borre el storage
                                 mNewNote.setValue(mCurrentVoiceNote);
                                 resetFirebaseRefs();
                             }
