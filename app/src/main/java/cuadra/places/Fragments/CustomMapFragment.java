@@ -4,16 +4,30 @@ import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.util.Log;
 
+import com.firebase.geofire.GeoFire;
+import com.firebase.geofire.GeoLocation;
+import com.firebase.geofire.GeoQuery;
+import com.firebase.geofire.GeoQueryEventListener;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
 
 import static cuadra.places.Activities.MainActivity.LOCATION_PERMISSIONS;
 import static cuadra.places.Activities.MainActivity.PERMISSIONS_LOCATION;
 import static cuadra.places.Activities.MainActivity.askPermissions;
 import static cuadra.places.Activities.MainActivity.hasPermissions;
+import static cuadra.places.Fragments.FireNotes.IN_RADIUS_DISTANCE;
+import static cuadra.places.Fragments.FireNotes.NOTES_LOCATIONS_CHILD;
 
 /**
  * Created by Ruben on 10/5/16.
@@ -21,9 +35,13 @@ import static cuadra.places.Activities.MainActivity.hasPermissions;
 
 public class CustomMapFragment extends SupportMapFragment implements OnMapReadyCallback {
 
+    private static final double CDMX_LAT=19.427;
+    private static final double CDMX_LNG=-99.16771;
+    public static final int MAP_ZOOM = 16;
     private static final String LOGTAG = "MapFragment";
     private GoogleMap mMap;
     private Context CONTEXT;
+    private GeoQuery mGeoQuery;
 
     //INTERACTIONS
     private OnMapFragmentInteraction mListener;
@@ -83,7 +101,59 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
         {
             askPermissions(getActivity(),LOCATION_PERMISSIONS,PERMISSIONS_LOCATION);
         }
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(CDMX_LAT,CDMX_LNG),MAP_ZOOM));
+
+        mGeoQuery = (new GeoFire(FirebaseDatabase.getInstance().getReference().child(NOTES_LOCATIONS_CHILD)))
+                .queryAtLocation(new GeoLocation
+                                (mMap.getCameraPosition().target.latitude,mMap.getCameraPosition().target.latitude),
+                        IN_RADIUS_DISTANCE);
+
+        mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener()
+        {
+            @Override
+            public void onCameraIdle()
+            {
+                mGeoQuery.setCenter(new GeoLocation(mMap.getCameraPosition().target.latitude,mMap.getCameraPosition().target.longitude));
+            }
+        });
+
+        mGeoQuery.addGeoQueryEventListener(geoListener);
+
     }
+    private GeoQueryEventListener geoListener = new GeoQueryEventListener()
+    {
+        @Override
+        public void onKeyEntered(String key, GeoLocation location)
+        {
+            MarkerOptions mo = new MarkerOptions();
+            mo.position(new LatLng(location.latitude,location.longitude));
+            mo.title(key);
+            Marker m = mMap.addMarker(mo);
+            //m.remove();
+        }
+
+        @Override
+        public void onKeyExited(String key)
+        {
+
+
+        }
+
+        @Override
+        public void onKeyMoved(String key, GeoLocation location)
+        {
+
+        }
+
+        @Override
+        public void onGeoQueryReady()
+        {
+
+        }
+
+        @Override
+        public void onGeoQueryError(DatabaseError error) {}
+    };
     public interface OnMapFragmentInteraction
     {
         void mapReady(GoogleMap gmap);

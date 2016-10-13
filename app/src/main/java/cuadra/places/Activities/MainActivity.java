@@ -64,6 +64,7 @@ import static cuadra.places.Adapters.MainAdapter.FIRE_NOTES_POSITION;
 import static cuadra.places.Adapters.MainAdapter.FRAGMENT_POSITION;
 import static cuadra.places.Adapters.MainAdapter.MAP_POSITION;
 import static cuadra.places.Adapters.MainAdapter.SECTIONS;
+import static cuadra.places.Fragments.CustomMapFragment.MAP_ZOOM;
 
 public class MainActivity extends AppCompatActivity implements
         FireNotes.OnFireNotesFragmentInteractionListener,
@@ -348,18 +349,6 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public void drawPin(AudioVoiceNote avn)
-    {
-        if (gMap!=null)
-        {
-            MarkerOptions mo = new MarkerOptions();
-            //mo.position(new LatLng(avn.getLatitude(),avn.getLongitude()));
-            mo.title(avn.getTitle());
-            gMap.addMarker(mo);
-        }
-    }
-
-    @Override
     public void hideFAB() {fab.hide();}
 
     @Override
@@ -439,13 +428,21 @@ public class MainActivity extends AppCompatActivity implements
     }
     protected void onStop()
     {
-        // Disconnecting the client invalidates it.
-        LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
-        // only stop if it's connected, otherwise we crash
-        if (mGoogleApiClient != null)
+        try
         {
-            mGoogleApiClient.disconnect();
+            // Disconnecting the client invalidates it.
+            LocationServices.FusedLocationApi.removeLocationUpdates(mGoogleApiClient, this);
+            // only stop if it's connected, otherwise we crash
+            if (mGoogleApiClient != null)
+            {
+                mGoogleApiClient.disconnect();
+            }
         }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+
         super.onStop();
     }
 
@@ -516,7 +513,7 @@ public class MainActivity extends AppCompatActivity implements
     public void updateMapToCurrentLocation()
     {
         if (gMap!=null && mLastLocation!=null)
-            gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),16));
+            gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(mLastLocation.getLatitude(),mLastLocation.getLongitude()),MAP_ZOOM));
         else
             Log.d(TAG,"gMAP or lastLocation are null");
     }

@@ -66,8 +66,9 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
 {
     private static final String BUCKET_REFERENCE = "gs://the-places-youll-go.appspot.com";
     public static final String MESSAGES_CHILD = "VOICE-NOTES";
+    public static final String NOTES_LOCATIONS_CHILD="GEOFIRE";
     private static final String F_TAG = "Notes_Fragment";
-    private static final int IN_RADIUS_DISTANCE=2;
+    public static final int IN_RADIUS_DISTANCE=2;
 
     //VARS
     private String mfileName;
@@ -133,7 +134,7 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
         mNewNote=mFirebaseDatabaseReference.child(MESSAGES_CHILD);
         mCurrentVoiceNote = new AudioVoiceNote();
         mCurrentVoiceNote.setUser(mUser);
-        mGeoFire = new GeoFire(mFirebaseDatabaseReference.child("GEOFIRE"));
+        mGeoFire = new GeoFire(mFirebaseDatabaseReference.child(NOTES_LOCATIONS_CHILD));
     }
 
     @Override
@@ -263,9 +264,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
             stopPlaying();
         }
     }
-
-    @Override
-    public void drawPin(String title, Location l) {}
 
     @Override
     public void onAttach(Context context)
@@ -537,7 +535,6 @@ public class FireNotes extends Fragment implements FirebaseAdapterInterface
     public interface OnFireNotesFragmentInteractionListener
     {
         void resetFAB();
-        void drawPin(AudioVoiceNote avn);
         void hideFAB();
         void showFAB();
     }

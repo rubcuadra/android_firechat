@@ -21,6 +21,4 @@ public interface FirebaseAdapterInterface
 
     //void playVoiceNote(NotesAdapter.MessageViewHolder viewHolder, File f);
     void playVoiceNote(VoiceNotesAdapter.NoteViewHolder viewHolder, File f);
-
-    void drawPin(String title,Location l);
 }
