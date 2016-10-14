@@ -22,6 +22,9 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static cuadra.places.Activities.MainActivity.LOCATION_PERMISSIONS;
 import static cuadra.places.Activities.MainActivity.PERMISSIONS_LOCATION;
 import static cuadra.places.Activities.MainActivity.askPermissions;
@@ -39,6 +42,8 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
     private static final double CDMX_LNG=-99.16771;
     public static final int MAP_ZOOM = 16;
     private static final String LOGTAG = "MapFragment";
+    private List<Marker> mMarkers;
+
     private GoogleMap mMap;
     private Context CONTEXT;
     private GeoQuery mGeoQuery;
@@ -88,6 +93,8 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
     public void onMapReady(GoogleMap googleMap)
     {
         mMap = googleMap;
+        mMarkers = new ArrayList<Marker>();
+
         mListener.mapReady(mMap);
 
         if(hasPermissions(CONTEXT,LOCATION_PERMISSIONS))
@@ -101,13 +108,11 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
         {
             askPermissions(getActivity(),LOCATION_PERMISSIONS,PERMISSIONS_LOCATION);
         }
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(CDMX_LAT,CDMX_LNG),MAP_ZOOM));
-
         mGeoQuery = (new GeoFire(FirebaseDatabase.getInstance().getReference().child(NOTES_LOCATIONS_CHILD)))
                 .queryAtLocation(new GeoLocation
                                 (mMap.getCameraPosition().target.latitude,mMap.getCameraPosition().target.latitude),
                         IN_RADIUS_DISTANCE);
-
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(CDMX_LAT,CDMX_LNG),MAP_ZOOM-10));
         mMap.setOnCameraIdleListener(new GoogleMap.OnCameraIdleListener()
         {
             @Override
@@ -125,18 +130,30 @@ public class CustomMapFragment extends SupportMapFragment implements OnMapReadyC
         @Override
         public void onKeyEntered(String key, GeoLocation location)
         {
-            MarkerOptions mo = new MarkerOptions();
-            mo.position(new LatLng(location.latitude,location.longitude));
-            mo.title(key);
-            Marker m = mMap.addMarker(mo);
+
+            Marker m = mMap.addMarker(new MarkerOptions()
+                                        .position(new LatLng(location.latitude,location.longitude))
+                                        .title(key)
+
+                                      );
+            m.setTag(key);
+            mMarkers.add(m);
+            //m.getId()
             //m.remove();
         }
 
         @Override
         public void onKeyExited(String key)
         {
-
-
+            for (int i=0;i<mMarkers.size();++i)
+            {
+                if (mMarkers.get(i).getTag().equals(key))
+                {
+                    mMarkers.get(i).remove();
+                    mMarkers.remove(i);
+                    break;
+                }
+            }
         }
 
         @Override
