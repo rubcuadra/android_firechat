@@ -4,6 +4,9 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.ServerValue;
+
+import java.util.Map;
 
 
 /**
@@ -24,6 +27,8 @@ public class AudioVoiceNote
     private String duration;
     private String since;
     private String fileName;
+
+    //private long timestamp;
 
     public AudioVoiceNote(){}
 
@@ -144,4 +149,21 @@ public class AudioVoiceNote
         System.out.println(fileName);
 
     }
+
+    /*
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp)
+    {
+        this.timestamp = timestamp;
+    }
+
+    public static long calcTimestamp()
+    {
+        return 1;
+    }
+    */
+
 }
